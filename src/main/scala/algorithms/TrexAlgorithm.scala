@@ -1,24 +1,30 @@
 package algorithms
 
 import models.Table
-import org.apache.lucene.analysis.en.EnglishAnalyzer
+import models.index.IndexFields
+import org.apache.lucene.analysis.Analyzer
 import org.apache.lucene.index.IndexReader
-import pipes.{TableMappingPipe, TableMatchingPipe}
+import pipes.{TableMappingPipe, TableMatchingMatrixExtractingPipe, TableMatchingPipe}
 import search.{KeySearchWithSimilarity, TableSearch, ValueSearchWithSimilarity}
+import statistics.LuceneIndexTermFrequencyProvider
 import transformers.Transformer
 
-class TrexAlgorithm(indexReader: IndexReader, analyzer: EnglishAnalyzer) extends Algorithm {
+class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer) extends Algorithm {
 
-  val transformer = new Transformer
+  private val transformer = new Transformer
 
-  val keySearch = new KeySearchWithSimilarity(indexReader, analyzer)
-  val valueSearch = new ValueSearchWithSimilarity(indexReader, analyzer)
+  private val entitiesTermFrequencyProvider = new LuceneIndexTermFrequencyProvider(indexReader, IndexFields.entities)
+  private val keySearch = new KeySearchWithSimilarity(entitiesTermFrequencyProvider, analyzer)
 
-  var usedTables: List[Table] = _
+  private val contentTermFrequencyProvider = new LuceneIndexTermFrequencyProvider(indexReader, IndexFields.content)
+  private val valueSearch = new ValueSearchWithSimilarity(contentTermFrequencyProvider, analyzer)
+
+  private var usedTables: List[Table] = _
 
   override def run(queryTable: Table, tableSearch: TableSearch): List[List[String]] = {
 
     val tableMatchingPipe = new TableMatchingPipe(queryTable, keySearch, valueSearch)
+    val tableMatchingMatrixExtractingPipe = new TableMatchingMatrixExtractingPipe()
     val tableMappingPipe = new TableMappingPipe()
 
     tableSearch.getRawJsonTablesByKeys(Table.getKeys(queryTable))
