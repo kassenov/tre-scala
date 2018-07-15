@@ -2,13 +2,11 @@ package search
 
 import java.io.StringReader
 
-import models.Table
-import models.index.IndexFields
 import models.matching.ValueMatchResult
-import org.apache.lucene.analysis.en.EnglishAnalyzer
+import org.apache.lucene.analysis.Analyzer
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
-import org.apache.lucene.index.IndexReader
-import similarity.{ByWordLevenshteinSimilarity, TermFrequencyWeighter}
+import similarity.{ByWordLevenshteinSimilarity, TermFrequencyScorer}
+import statistics.TermFrequencyProvider
 
 import scala.collection.mutable
 
@@ -20,10 +18,10 @@ trait ValueSearch {
 }
 
 // TODO: merge with key search
-class ValueSearchWithSimilarity(indexReader: IndexReader, analyzer: EnglishAnalyzer) extends ValueSearch {
+class ValueSearchWithSimilarity(termFrequencyProvider: TermFrequencyProvider, analyzer: Analyzer) extends ValueSearch {
 
-  private lazy val tfWeighter = new TermFrequencyWeighter(indexReader, IndexFields.content)
-  private lazy val similarity = new ByWordLevenshteinSimilarity(tfWeighter)
+  private lazy val tfScorer = new TermFrequencyScorer(termFrequencyProvider)
+  private lazy val similarity = new ByWordLevenshteinSimilarity(tfScorer)
 
   private val analyzedValuesCache = mutable.Map[String, String]()
 

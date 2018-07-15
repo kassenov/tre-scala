@@ -9,9 +9,17 @@ trait StringSimilarity {
 
 }
 
-class ByWordLevenshteinSimilarity(tfWeighter: TermFrequencyWeighter,
+class ByWordLevenshteinSimilarity(tfWeighter: TermFrequencyScorer,
                                   threshold: Double = 0.8) {
 
+  /**
+    * Each query term is matched to a subject term where the levenshtein score is the highest.
+    * The similarity weight is sum of normalized weight of those terms.
+    *
+    * @param query
+    * @param in
+    * @return
+    */
   def sim(query: String, in: String): Option[Double] = {
 
     getSim(WeightedString.get(query, tfWeighter), WeightedString.get(in, tfWeighter))
@@ -29,10 +37,10 @@ class ByWordLevenshteinSimilarity(tfWeighter: TermFrequencyWeighter,
 
           in.words.par
             .zipWithIndex
-            .find { case (inWord, _) => getLeveshteinScore(queryWord, inWord) > threshold }
-            .map { case (_, inWordidx) =>
+            .find { case (inWord, _) => getLevenshteinScore(queryWord, inWord) > threshold }
+            .map { case (_, inWordIdx) =>
               val normQueryWordWeight = query.weights(queryWordIdx) / totalWeight
-              val normInWordWeight = in.weights(inWordidx) / totalWeight
+              val normInWordWeight = in.weights(inWordIdx) / totalWeight
               normQueryWordWeight + normInWordWeight
             }
 
@@ -44,8 +52,15 @@ class ByWordLevenshteinSimilarity(tfWeighter: TermFrequencyWeighter,
 
   private lazy val levenshteinDistance = new LevenshteinDistance()
 
-  private def getLeveshteinScore(queryTerm: String, inTerm: String): Double = {
-    var distance = levenshteinDistance.apply(queryTerm, inTerm)
+  /**
+    * Returns matching fraction. Eg. (abcdef, abde) => 1 - (2 / max(6,4)) => 0.7
+    *
+    * @param queryTerm
+    * @param inTerm
+    * @return
+    */
+  private def getLevenshteinScore(queryTerm: String, inTerm: String): Double = {
+    val distance = levenshteinDistance.apply(queryTerm, inTerm)
     1.0 - distance / math.max(queryTerm.length, inTerm.length)
   }
 

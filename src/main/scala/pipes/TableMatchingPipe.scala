@@ -66,7 +66,7 @@ class TableMatchingPipe(queryTable: Table, keySearch: KeySearch, valueSearch: Va
 
         } else {
 
-          (valueSearch.getValueMatchInValues(queryRow, tableRow) match {
+          (valueSearch.getValueMatchInValues(queryRow, tableRow, exclude = List(table.keyIdx.getOrElse(0))) match {
             case None             => List.empty
             case Some(valueMatch) => List(valueMatch)
           }) match {
