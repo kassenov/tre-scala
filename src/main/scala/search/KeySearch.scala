@@ -39,7 +39,7 @@ class KeySearchWithSimilarity(indexReader: IndexReader, analyzer: EnglishAnalyze
       .maxBy{ case (_, sim) => sim }
 
     match {
-        case (idx, _) => Some(idx)
+        case (idx, sim) => Some(ValueMatchResult(idx, sim))
     }
 
   }

@@ -56,15 +56,23 @@ class TableMatchingPipe(queryTable: Table, keySearch: KeySearch, valueSearch: Va
 
     val tableRow = Table.getRowByIndex(keyMatch.idx, table)
 
-    Table.getRowByIndex(queryRowIdx, queryTable)
+    getQueryRow(queryRowIdx)
       .zipWithIndex
       .map { case (queryRow, queryClmIdx) =>
 
-        (valueSearch.getValueMatchInValues(queryRow, tableRow) match {
-          case None         => List.empty
-          case Some(valueMatch) => List(valueMatch)
-        }) match {
-          case list => (queryClmIdx, list)
+        if (queryClmIdx == 0) {
+
+          List.empty
+
+        } else {
+
+          (valueSearch.getValueMatchInValues(queryRow, tableRow) match {
+            case None             => List.empty
+            case Some(valueMatch) => List(valueMatch)
+          }) match {
+            case list => (queryClmIdx, list)
+          }
+
         }
 
       }

@@ -15,7 +15,7 @@ import scala.collection.mutable
 trait ValueSearch {
 
   // TODO: returns first best match, but can be any
-  def getValueMatchInValues(value: String, rowValues: List[String]): Option[ValueMatchResult]
+  def getValueMatchInValues(value: String, rowValues: List[String], exclude: List[Int]): Option[ValueMatchResult]
 
 }
 
@@ -27,20 +27,29 @@ class ValueSearchWithSimilarity(indexReader: IndexReader, analyzer: EnglishAnaly
 
   private val analyzedValuesCache = mutable.Map[String, String]()
 
-  override def getValueMatchInValues(value: String, rowValues: List[String]): Option[ValueMatchResult] = {
+  override def getValueMatchInValues(value: String, rowValues: List[String], exclude: List[Int]): Option[ValueMatchResult] = {
 
-    rowValues
-      .par
-      .zipWithIndex
-      .map { case (tableRow, idx) =>
-        similarity.sim(analyzeQueryValue(value), analyze(tableRow)) match {
-          case Some(sim) => (idx, sim)
-        }
-      }.toList
-      .maxBy{ case (_, sim) => sim }
+    val matchSim =
+      rowValues
+        .par
+        .zipWithIndex
+        .map { case (tableRow, idx) =>
 
-    match {
-        case (idx, _) => Some(idx)
+          if (!exclude.contains(idx)) {
+            similarity.sim(analyzeQueryValue(value), analyze(tableRow)) match {
+              case Some(sim) => (idx, sim)
+              case None => (idx, 0)
+            }
+          } else {
+            (idx, 0)
+          }
+
+        }.toList
+        .maxBy{ case (_, sim) => sim }
+
+    matchSim match {
+      case (idx, sim) if sim > 0 => Some(ValueMatchResult(idx, sim))
+      case _ => None
     }
 
   }
