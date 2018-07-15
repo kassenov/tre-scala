@@ -1,3 +1,3 @@
 package models.matching
 
-case class CellMatching(colIdx: Int, sim: Double)
+case class CellMatching(valueMatches: List[ValueMatchResult])

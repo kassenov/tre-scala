@@ -4,6 +4,7 @@ import java.io.StringReader
 
 import models.Table
 import models.index.IndexFields
+import models.matching.ValueMatchResult
 import org.apache.lucene.analysis.en.EnglishAnalyzer
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
 import org.apache.lucene.index.IndexReader
@@ -14,7 +15,7 @@ import scala.collection.mutable
 trait KeySearch {
 
   // TODO: returns first best match, but can be any
-  def getRowIdxByKey(key: String, tableKeys: List[String]): Option[Int]
+  def getKeyMatchInTableKeys(key: String, tableKeys: List[String]): Option[ValueMatchResult]
 
 }
 
@@ -25,7 +26,7 @@ class KeySearchWithSimilarity(indexReader: IndexReader, analyzer: EnglishAnalyze
 
   private val analyzedKeysCache = mutable.Map[String, String]()
 
-  override def getRowIdxByKey(key: String, tableKeys: List[String]): Option[Int] = {
+  override def getKeyMatchInTableKeys(key: String, tableKeys: List[String]): Option[ValueMatchResult] = {
 
     tableKeys
       .par

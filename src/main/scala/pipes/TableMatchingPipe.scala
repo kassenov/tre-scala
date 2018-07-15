@@ -1,23 +1,39 @@
 package pipes
 
 import models.Table
-import models.matching.{CellMatching, RowMatching, TableMatching}
-import search.KeySearchWithSimilarity
+import models.matching._
+import search.{KeySearch, ValueSearch}
 
 import scala.collection.mutable
 
-class TableMatchingPipe(queryTable: Table, keySearch: KeySearchWithSimilarity) {
+class TableMatchingPipe(queryTable: Table, keySearch: KeySearch, valueSearch: ValueSearch) {
 
   def process(table: Table): TableMatching = {
 
-    getQueryToTableKeysIdxMap(table)
-      .map{ case (queryRowIdx, rowIdxes) =>
-        rowIdxes.map(rowIdx => getRowCellMatches(queryRowIdx, rowIdx, table))
-      }
+    val keyValueMatches =
+      getQueryKeysToTableKeyMatches(table)
+        .map{ case (queryRowIdx, tableKeyMatches) =>
+
+          val rowMatches =
+            tableKeyMatches.map { keyMatch =>
+
+              val cellMatches =
+                getRowCellMatches(queryRowIdx, keyMatch, table)
+                  .map { case (queryClmIdx, valueMatches) => CellMatching(valueMatches)}
+
+              RowMatching(cellMatches)
+
+            }
+
+          KeyMatching(queryRowIdx, rowMatches)
+
+        }
+
+    TableMatching(keyValueMatches)
 
   }
 
-  def getQueryToTableKeysIdxMap(table: Table): List[(Int, List[Int])] = {
+  def getQueryKeysToTableKeyMatches(table: Table): List[(Int, List[ValueMatchResult])] = {
 
     val tableKeys = Table.getKeys(table)
 
@@ -25,9 +41,9 @@ class TableMatchingPipe(queryTable: Table, keySearch: KeySearchWithSimilarity) {
       .zipWithIndex
       .map{ case (queryKey, queryRowIdx) =>
 
-        (keySearch.getRowIdxByKey(queryKey, tableKeys) match {
+        (keySearch.getKeyMatchInTableKeys(queryKey, tableKeys) match {
           case None         => List.empty
-          case Some(rowIdx) => List(rowIdx)
+          case Some(keyMatch) => List(keyMatch)
         }) match {
           case list => (queryRowIdx, list)
         }
@@ -36,11 +52,26 @@ class TableMatchingPipe(queryTable: Table, keySearch: KeySearchWithSimilarity) {
 
   }
 
-  def getRowCellMatches(queryRowIdx: Int, rowIdx: Int, table: Table): List[CellMatching] = {
+  def getRowCellMatches(queryRowIdx: Int, keyMatch: ValueMatchResult, table: Table): List[(Int, List[ValueMatchResult])] = {
+
+    val tableRow = Table.getRowByIndex(keyMatch.idx, table)
+
+    Table.getRowByIndex(queryRowIdx, queryTable)
+      .zipWithIndex
+      .map { case (queryRow, queryClmIdx) =>
+
+        (valueSearch.getValueMatchInValues(queryRow, tableRow) match {
+          case None         => List.empty
+          case Some(valueMatch) => List(valueMatch)
+        }) match {
+          case list => (queryClmIdx, list)
+        }
+
+      }
 
   }
 
-  val queryTableRowsCache = mutable.Map[Int, List[String]]()
+  private val queryTableRowsCache = mutable.Map[Int, List[String]]()
 
   def getQueryRow(queryRowIdx: Int): List[String] =
     queryTableRowsCache.get(queryRowIdx) match {

@@ -1,3 +1,8 @@
 package models.matching
 
-case class TableMatching(rowMatches: List[Option[RowMatching]])
+/**
+  * Each query row can have multiple row matches
+  *
+  * @param keyMatches
+  */
+case class TableMatching(keyMatches: List[KeyMatching])

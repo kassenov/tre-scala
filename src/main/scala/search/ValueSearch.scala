@@ -4,6 +4,7 @@ import java.io.StringReader
 
 import models.Table
 import models.index.IndexFields
+import models.matching.ValueMatchResult
 import org.apache.lucene.analysis.en.EnglishAnalyzer
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
 import org.apache.lucene.index.IndexReader
@@ -14,7 +15,7 @@ import scala.collection.mutable
 trait ValueSearch {
 
   // TODO: returns first best match, but can be any
-  def getClmIdxByValue(value: String, rowValues: List[String]): Option[Int]
+  def getValueMatchInValues(value: String, rowValues: List[String]): Option[ValueMatchResult]
 
 }
 
@@ -26,7 +27,7 @@ class ValueSearchWithSimilarity(indexReader: IndexReader, analyzer: EnglishAnaly
 
   private val analyzedValuesCache = mutable.Map[String, String]()
 
-  override def getClmIdxByValue(value: String, rowValues: List[String]): Option[Int] = {
+  override def getValueMatchInValues(value: String, rowValues: List[String]): Option[ValueMatchResult] = {
 
     rowValues
       .par
