@@ -7,26 +7,24 @@ class TableMatchingMatrixExtractingPipe() {
 
   def process(tableMatching: TableMatching): MatchingMatrix = {
 
-    val columns =
+    MatchingMatrix apply
       tableMatching
         .keyMatches
         .map { keyMatch =>
+
           // TODO Only first match
-          val cells =
+          MatchingMatrixColumn apply
             keyMatch.rowMatchings.head.cellMatches
               .zipWithIndex
               .map { case (cellMatch, queryClmIdx) =>
-                val idxes =
+
+                MatchingMatrixCell apply
                   cellMatch.valueMatches
                     .map (valueMatch => valueMatch.idx)
 
-                MatchingMatrixCell(idxes)
               }
 
-          MatchingMatrixColumn(cells)
         }
-
-    MatchingMatrix(columns)
 
   }
 

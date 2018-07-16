@@ -1,5 +1,5 @@
 package models.mapping
 
-import models.score.MappingScore
+import models.score.TableMappingScore
 
-case class ColumnsMapping(queryToDestMap: List[Int], score: MappingScore)
+case class ColumnsMapping(columns: List[Option[Int]], score: TableMappingScore)
