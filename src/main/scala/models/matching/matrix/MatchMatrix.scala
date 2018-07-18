@@ -1,10 +1,10 @@
 package models.matching.matrix
 
-case class MatchingMatrix (columns: List[MatchingMatrixColumn])
+case class MatchMatrix(columns: List[MatchingMatrixColumn])
 
-object MatchingMatrix {
+object MatchMatrix {
 
-  def getBestIdxPerColumn(matrix: MatchingMatrix): List[Option[IdxWithOccurrence]] =
+  def getBestIdxPerColumn(matrix: MatchMatrix): List[Option[IdxWithOccurrence]] =
     getIdxToOccurrenceMapByMatrix(matrix)
       .map { columnIdxToOccurrenceMap =>
 
@@ -18,13 +18,13 @@ object MatchingMatrix {
       }
 
 
-  def getIdxToOccurrenceMapByMatrix(matrix: MatchingMatrix): List[Map[Int, Int]] =
+  def getIdxToOccurrenceMapByMatrix(matrix: MatchMatrix): List[Map[Int, Int]] =
     matrix.columns
       .map { column =>
         MatchingMatrixColumn.getIdxToOccurrenceMap(column)
       }
 
-  def getOccurrenceOfIdxesInQueryRowIdx(matrix: MatchingMatrix,
+  def getOccurrenceOfIdxesInQueryRowIdx(matrix: MatchMatrix,
                                         queryRowIdx: Int,
                                         bestIdxPerColumn: List[Option[IdxWithOccurrence]]): List[Int] =
     matrix.columns

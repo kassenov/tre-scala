@@ -31,6 +31,7 @@ class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer) extends Algori
       .par
       .map(jsonTable => transformer.rawJsonToTable(jsonTable))
       .map(candidateTable => tableMatchingPipe.process(candidateTable))
+      .map(tableMatching => tableMatchingMatrixExtractingPipe.process(tableMatching))
       .map(tableMatching => tableMappingPipe.process(tableMatching))
 
   }

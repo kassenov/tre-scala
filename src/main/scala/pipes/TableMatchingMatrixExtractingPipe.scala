@@ -5,9 +5,9 @@ import models.matching.matrix._
 
 class TableMatchingMatrixExtractingPipe() {
 
-  def process(tableMatching: TableMatching): MatchingMatrix = {
+  def process(tableMatching: TableMatching): MatchMatrix = {
 
-    MatchingMatrix apply
+    MatchMatrix apply
       tableMatching
         .keyMatches
         .map { keyMatch =>
