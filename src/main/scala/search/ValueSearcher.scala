@@ -10,7 +10,7 @@ import statistics.TermFrequencyProvider
 
 import scala.collection.mutable
 
-trait ValueSearch {
+trait ValueSearcher {
 
   // TODO: returns first best match, but can be any
   def getValueMatchInValues(value: String, rowValues: List[String], exclude: List[Int]): Option[ValueMatchResult]
@@ -18,7 +18,7 @@ trait ValueSearch {
 }
 
 // TODO: merge with key search
-class ValueSearchWithSimilarity(termFrequencyProvider: TermFrequencyProvider, analyzer: Analyzer) extends ValueSearch {
+class ValueSearcherWithSimilarity(termFrequencyProvider: TermFrequencyProvider, analyzer: Analyzer) extends ValueSearcher {
 
   private lazy val tfScorer = new TermFrequencyScorer(termFrequencyProvider)
   private lazy val similarity = new ByWordLevenshteinSimilarity(tfScorer)

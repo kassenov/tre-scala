@@ -8,7 +8,7 @@ import org.apache.lucene.queryparser.classic.QueryParser
 import org.apache.lucene.search.{BooleanClause, BooleanQuery, IndexSearcher}
 import org.apache.lucene.store.SimpleFSDirectory
 
-trait TableSearch {
+trait TableSearcher {
 
   var previouslyFoundDocIds: List[Int] = _
 
@@ -16,7 +16,7 @@ trait TableSearch {
 
 }
 
-class LuceneTableSearch(indexPath: String) extends TableSearch {
+class LuceneTableSearcher(indexPath: String) extends TableSearcher {
 
   private lazy val luceneIndexDir = new SimpleFSDirectory(new File(indexPath).toPath)
 

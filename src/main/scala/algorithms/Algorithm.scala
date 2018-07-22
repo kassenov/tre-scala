@@ -1,9 +1,9 @@
 package algorithms
 
-import search.TableSearch
+import search.TableSearcher
 
 trait Algorithm {
 
-  def run(tableSearch: TableSearch): List[List[String]]
+  def run(tableSearch: TableSearcher): List[List[String]]
 
 }

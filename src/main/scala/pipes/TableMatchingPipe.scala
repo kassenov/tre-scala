@@ -2,11 +2,11 @@ package pipes
 
 import models.Table
 import models.matching._
-import search.{KeySearch, ValueSearch}
+import search.{KeySearcher, ValueSearcher}
 
 import scala.collection.mutable
 
-class TableMatchingPipe(queryTable: Table, keySearch: KeySearch, valueSearch: ValueSearch) {
+class TableMatchingPipe(queryTable: Table, keySearch: KeySearcher, valueSearch: ValueSearcher) {
 
   def process(table: Table): TableMatching = {
 

@@ -8,14 +8,14 @@ import org.apache.lucene.index.IndexWriter
 import org.apache.lucene.index.DirectoryReader
 import org.apache.lucene.search.{BooleanClause, BooleanQuery, IndexSearcher}
 import org.apache.lucene.queryparser.classic.QueryParser
-import search.{LuceneTableSearch, TableSearch}
+import search.{LuceneTableSearcher, TableSearcher}
 
 
 object Main extends App {
   val rootPath = "/media/light/SSD/50"
   val concept = "countries"
 
-  var tableSearch = new LuceneTableSearch(s"$rootPath/lucene-indexes/$concept-lidx")
+  var tableSearch = new LuceneTableSearcher(s"$rootPath/lucene-indexes/$concept-lidx")
 
   println("Start")
   val startTime = System.nanoTime

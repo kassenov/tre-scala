@@ -10,14 +10,14 @@ import statistics.TermFrequencyProvider
 
 import scala.collection.mutable
 
-trait KeySearch {
+trait KeySearcher {
 
   // TODO: returns first best match, but can be any
   def getKeyMatchInTableKeys(key: String, tableKeys: List[String]): Option[ValueMatchResult]
 
 }
 
-class KeySearchWithSimilarity(termFrequencyProvider: TermFrequencyProvider, analyzer: Analyzer) extends KeySearch {
+class KeySearcherWithSimilarity(termFrequencyProvider: TermFrequencyProvider, analyzer: Analyzer) extends KeySearcher {
 
   private lazy val tfScorer = new TermFrequencyScorer(termFrequencyProvider)
   private lazy val similarity = new ByWordLevenshteinSimilarity(tfScorer)
