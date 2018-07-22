@@ -4,7 +4,7 @@ import models.{MappingPipesResult, Table}
 import models.index.IndexFields
 import org.apache.lucene.analysis.Analyzer
 import org.apache.lucene.index.IndexReader
-import pipes.filtering.{TableMappingPipe, TableMatchingMatrixExtractingPipe, TableMatchingPipe}
+import pipes.filtering._
 import pipes.mapping.{TableCandidateKeysExtractingPipe, TableMappingPipe, TableMatchingMatrixExtractingPipe, TableMatchingPipe}
 import pipes.{TableMappingPipe, TableMatchingMatrixExtractingPipe, TableMatchingPipe}
 import search.{KeySearcherWithSimilarity, TableSearcher, ValueSearcherWithSimilarity}
@@ -23,14 +23,21 @@ class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer) extends Algori
 
   private var usedTables: List[Table] = _
 
+  val sizeFilter = new FilterTableBySize(minRows = 5, minCols = 3)
+  val candidateKeysFilter = new FilterTableByCandidateKeys()
+
   override def run(queryTable: Table, tableSearcher: TableSearcher): List[List[String]] = {
 
-    tableSearcher.getRawJsonTablesByKeys(Table.getKeys(queryTable))
-      .par
-      .map { jsonTable => transformer.rawJsonToTable(jsonTable) }
-      .map { candidateTable =>
-        processByMappingPipes(queryTable, candidateTable)
-      }
+    val mappingResults =
+      tableSearcher
+        .getRawJsonTablesByKeys(Table.getKeys(queryTable))
+        .par
+        .map { jsonTable => transformer.rawJsonToTable(jsonTable) }
+        .filter { candidateTable => sizeFilter.filter(candidateTable) }
+        .map { candidateTable => processByMappingPipes(queryTable, candidateTable) }
+        .filter { mappingResult => candidateKeysFilter.filter(mappingResult.candidateKeys) }
+
+
 
   }
 
@@ -46,7 +53,7 @@ class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer) extends Algori
     val columnsMapping = tableMappingPipe.process(matchingMatrix)
     val candidateKeys = tableCandidateKeysExtractingPipe.process(candidateTable, tableMatching)
 
-    MappingPipesResult(candidateTable, columnsMapping, candidateKeys)
+    MappingPipesResult(candidateTable, columnsMapping, candidateKeys, tableMatching)
 
   }
 
