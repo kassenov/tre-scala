@@ -41,12 +41,8 @@ class TableMatchingPipe(queryTable: Table, keySearch: KeySearcher, valueSearch: 
       .zipWithIndex
       .map{ case (queryKey, queryRowIdx) =>
 
-        (keySearch.getKeyMatchInTableKeys(queryKey, tableKeys) match {
-          case None         => List.empty
-          case Some(keyMatch) => List(keyMatch) // First 'good' match
-        }) match {
-          case list => (queryRowIdx, list)
-        }
+        val matches = keySearch.getValueMatchsOfKeyInKeys(queryKey, tableKeys)
+        (queryRowIdx, matches)
 
       }
 
@@ -62,7 +58,7 @@ class TableMatchingPipe(queryTable: Table, keySearch: KeySearcher, valueSearch: 
 
         if (queryClmIdx == 0) {
 
-          List.empty
+          None
 
         } else {
 
@@ -75,7 +71,7 @@ class TableMatchingPipe(queryTable: Table, keySearch: KeySearcher, valueSearch: 
 
         }
 
-      }
+      }.flatten
 
   }
 

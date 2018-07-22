@@ -26,7 +26,7 @@ class ByWordLevenshteinSimilarity(tfWeighter: TermFrequencyScorer,
 
   }
 
-  private def getSim(query: WeightedString, in: WeightedString): Option[Double] = {
+  private def getSim(query: WeightedString, in: WeightedString, threshold: Double = 0.8): Option[Double] = {
 
     val totalWeight = query.total + in.total
 
@@ -43,7 +43,10 @@ class ByWordLevenshteinSimilarity(tfWeighter: TermFrequencyScorer,
             normQueryWordWeight + normInWordWeight
           }
 
-    }.sum
+    }.sum match {
+      case Some(score) if score > threshold => Some(score)
+      case None                             => None
+    }
 
   }
 
