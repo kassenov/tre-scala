@@ -1,13 +1,15 @@
 package pipes
 
 import models.Table
-import models.mapping.ColumnsMapping
+import models.matching.TableMatching
 
 class TableCandidateKeysExtractingPipe() {
 
-  def process(table: Table, columnsMapping: ColumnsMapping): List[String] = {
+  def process(table: Table, tableMatching: TableMatching): List[String] = {
 
+    tableMatching.keyMatches.map { keyMatch =>
 
+    }
 
   }
 

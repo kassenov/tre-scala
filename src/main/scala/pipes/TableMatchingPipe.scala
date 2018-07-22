@@ -21,7 +21,7 @@ class TableMatchingPipe(queryTable: Table, keySearch: KeySearcher, valueSearch: 
                 getRowCellMatches(queryRowIdx, keyMatch, table)
                   .map { case (queryClmIdx, valueMatches) => CellMatching(valueMatches)}
 
-              RowMatching(cellMatches)
+              RowMatching(keyMatch.idx, cellMatches)
 
             }
 
@@ -43,7 +43,7 @@ class TableMatchingPipe(queryTable: Table, keySearch: KeySearcher, valueSearch: 
 
         (keySearch.getKeyMatchInTableKeys(queryKey, tableKeys) match {
           case None         => List.empty
-          case Some(keyMatch) => List(keyMatch)
+          case Some(keyMatch) => List(keyMatch) // First 'good' match
         }) match {
           case list => (queryRowIdx, list)
         }
