@@ -1,4 +1,4 @@
-package pipes
+package pipes.mapping
 
 import models.matching.TableMatching
 import models.matching.matrix._

@@ -1,4 +1,4 @@
-package pipes
+package pipes.mapping
 
 import models.Table
 import models.matching._
@@ -6,19 +6,19 @@ import search.{KeySearcher, ValueSearcher}
 
 import scala.collection.mutable
 
-class TableMatchingPipe(queryTable: Table, keySearch: KeySearcher, valueSearch: ValueSearcher) {
+class TableMatchingPipe(keySearch: KeySearcher, valueSearch: ValueSearcher) {
 
-  def process(table: Table): TableMatching = {
+  def process(queryTable: Table, table: Table): TableMatching = {
 
     val keyValueMatches =
-      getQueryKeysToTableKeyMatches(table)
+      getQueryKeysToTableKeyMatches(queryTable, table)
         .map{ case (queryRowIdx, tableKeyMatches) =>
 
           val rowMatches =
             tableKeyMatches.map { keyMatch =>
 
               val cellMatches =
-                getRowCellMatches(queryRowIdx, keyMatch, table)
+                getRowCellMatches(queryTable, queryRowIdx, keyMatch, table)
                   .map { case (queryClmIdx, valueMatches) => CellMatching(valueMatches)}
 
               RowMatching(keyMatch.idx, cellMatches)
@@ -33,7 +33,7 @@ class TableMatchingPipe(queryTable: Table, keySearch: KeySearcher, valueSearch: 
 
   }
 
-  private def getQueryKeysToTableKeyMatches(table: Table): List[(Int, List[ValueMatchResult])] = {
+  private def getQueryKeysToTableKeyMatches(queryTable: Table, table: Table): List[(Int, List[ValueMatchResult])] = {
 
     val tableKeys = Table.getKeys(table)
 
@@ -48,11 +48,11 @@ class TableMatchingPipe(queryTable: Table, keySearch: KeySearcher, valueSearch: 
 
   }
 
-  private def getRowCellMatches(queryRowIdx: Int, keyMatch: ValueMatchResult, table: Table): List[(Int, List[ValueMatchResult])] = {
+  private def getRowCellMatches(queryTable: Table, queryRowIdx: Int, keyMatch: ValueMatchResult, table: Table): List[(Int, List[ValueMatchResult])] = {
 
     val tableRow = Table.getRowByIndex(keyMatch.idx, table)
 
-    getQueryRow(queryRowIdx)
+    getQueryRow(queryTable, queryRowIdx)
       .zipWithIndex
       .map { case (queryRow, queryClmIdx) =>
 
@@ -77,7 +77,7 @@ class TableMatchingPipe(queryTable: Table, keySearch: KeySearcher, valueSearch: 
 
   private val queryTableRowsCache = mutable.Map[Int, List[String]]()
 
-  private def getQueryRow(queryRowIdx: Int): List[String] =
+  private def getQueryRow(queryTable: Table, queryRowIdx: Int): List[String] =
     queryTableRowsCache.get(queryRowIdx) match {
       case Some(row) => row
       case None =>
