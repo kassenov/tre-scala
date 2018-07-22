@@ -13,7 +13,7 @@ import scala.collection.mutable
 trait KeySearcher {
 
   // TODO: returns first best match, but can be any
-  def getKeyMatchInTableKeys(key: String, tableKeys: List[String]): Option[ValueMatchResult]
+  def getKeyMatchInTableKeys(key: String, tableKeys: List[String]): List[ValueMatchResult]
 
 }
 
@@ -24,7 +24,7 @@ class KeySearcherWithSimilarity(termFrequencyProvider: TermFrequencyProvider, an
 
   private val analyzedKeysCache = mutable.Map[String, String]()
 
-  override def getKeyMatchInTableKeys(key: String, tableKeys: List[String]): Option[ValueMatchResult] = {
+  override def getKeyMatchInTableKeys(key: String, tableKeys: List[String]): List[ValueMatchResult] = {
 
     tableKeys
       .par

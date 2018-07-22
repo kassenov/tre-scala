@@ -30,24 +30,31 @@ class ByWordLevenshteinSimilarity(tfWeighter: TermFrequencyScorer,
 
     val totalWeight = query.total + in.total
 
-    val result =
-      query
-        .words.par
-        .zipWithIndex.map { case (queryWord, queryWordIdx) =>
+    query
+      .words.par
+      .zipWithIndex.map { case (queryWord, queryWordIdx) =>
 
-          in.words.par
-            .zipWithIndex
-            .find { case (inWord, _) => getLevenshteinScore(queryWord, inWord) > threshold }
-            .map { case (_, inWordIdx) =>
-              val normQueryWordWeight = query.weights(queryWordIdx) / totalWeight
-              val normInWordWeight = in.weights(inWordIdx) / totalWeight
-              normQueryWordWeight + normInWordWeight
-            }
+        in.words.par
+          .zipWithIndex
+          .find { case (inWord, _) => getMatchScore(queryWord, inWord) > threshold }
+          .map { case (_, inWordIdx) =>
+            val normQueryWordWeight = query.weights(queryWordIdx) / totalWeight
+            val normInWordWeight = in.weights(inWordIdx) / totalWeight
+            normQueryWordWeight + normInWordWeight
+          }
 
-      }.sum
+    }.sum
 
-    result
+  }
 
+  private def getMatchScore(queryTerm: String, inTerm: String, minLengthToLevenshtein: Int = 4): Double = {
+    val trimmedQueryTerm = queryTerm.trim
+    val trimmedInTerm = inTerm.trim
+    if (trimmedQueryTerm.length >= 4) {
+      getLevenshteinScore(trimmedQueryTerm, trimmedInTerm)
+    } else {
+      getExactMatchScore(trimmedQueryTerm, trimmedInTerm)
+    }
   }
 
   private lazy val levenshteinDistance = new LevenshteinDistance()
@@ -62,6 +69,14 @@ class ByWordLevenshteinSimilarity(tfWeighter: TermFrequencyScorer,
   private def getLevenshteinScore(queryTerm: String, inTerm: String): Double = {
     val distance = levenshteinDistance.apply(queryTerm, inTerm)
     1.0 - distance / math.max(queryTerm.length, inTerm.length)
+  }
+
+  private def getExactMatchScore(queryTerm: String, inTerm: String): Double = {
+    if (queryTerm == inTerm) {
+      1
+    } else {
+      0
+    }
   }
 
 }
