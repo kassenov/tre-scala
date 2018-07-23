@@ -8,7 +8,7 @@ import scala.collection.mutable
 
 class TableMatchingExtractor(keySearch: KeySearcher, valueSearch: ValueSearcher) {
 
-  def process(queryTable: Table, table: Table): TableMatching = {
+  def extract(queryTable: Table, table: Table): TableMatching = {
 
     val keyValueMatches =
       getQueryKeysToTableKeyMatches(queryTable, table)

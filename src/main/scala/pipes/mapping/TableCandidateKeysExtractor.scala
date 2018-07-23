@@ -5,7 +5,7 @@ import models.matching.{KeyWithIndex, TableMatching}
 
 class TableCandidateKeysExtractor() {
 
-  def process(table: Table, tableMatching: TableMatching): List[KeyWithIndex] = {
+  def extract(table: Table, tableMatching: TableMatching): List[KeyWithIndex] = {
 
     val excludeIdxes = tableMatching.keyMatches.flatten { keyMatch =>
       keyMatch.rowMatchings.map(rowMatch => rowMatch.candidateRowId)

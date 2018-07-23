@@ -6,7 +6,7 @@ import models.score.{MappingScore, TableMappingScore}
 
 class TableMappingExtractor() {
 
-  def process(matchMatrix: MatchMatrix): ColumnsMapping = {
+  def extract(matchMatrix: MatchMatrix): ColumnsMapping = {
 
     // TODO maybe don't need the check - always non empty list as matrix?
     val queryKeysCount = matchMatrix.columns.find(c => c.cells.nonEmpty).get.cells.size

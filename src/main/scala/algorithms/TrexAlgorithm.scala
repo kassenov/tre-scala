@@ -38,9 +38,9 @@ class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer) extends Algori
         .getRawJsonTablesByKeys(Table.getKeys(queryTable))
         .par
         .map { jsonTable => transformer.rawJsonToTable(jsonTable) }
-        .filter { candidateTable => sizeFilter.filter(candidateTable) }
+        .filter { candidateTable => sizeFilter.apply(candidateTable) }
         .map { candidateTable => mappingPipe.process(queryTable, candidateTable) }
-        .filter { mappingResult => candidateKeysFilter.filter(mappingResult.candidateKeys) }
+        .filter { mappingResult => candidateKeysFilter.apply(mappingResult.candidateKeys) }
 
 
 

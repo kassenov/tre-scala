@@ -4,7 +4,7 @@ import models.matching.KeyWithIndex
 
 class FilterTableByCandidateKeys() {
 
-  def filter(candidateKeys: List[KeyWithIndex]): Boolean = {
+  def apply(candidateKeys: List[KeyWithIndex]): Boolean = {
     candidateKeys.nonEmpty
   }
 

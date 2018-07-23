@@ -12,10 +12,10 @@ class MappingPipe(keySearcher: KeySearcher, valueSearcher: ValueSearcher) {
 
   def process(queryTable: Table, candidateTable: Table): MappingPipeResult = {
 
-    val tableMatching = tableMatchingExtractor.process(queryTable, candidateTable)
-    val matchingMatrix = tableMatchingMatrixExtractor.process(tableMatching)
-    val columnsMapping = tableMappingExtractor.process(matchingMatrix)
-    val candidateKeys = tableCandidateKeysExtractor.process(candidateTable, tableMatching)
+    val tableMatching = tableMatchingExtractor.extract(queryTable, candidateTable)
+    val matchingMatrix = tableMatchingMatrixExtractor.extract(tableMatching)
+    val columnsMapping = tableMappingExtractor.extract(matchingMatrix)
+    val candidateKeys = tableCandidateKeysExtractor.extract(candidateTable, tableMatching)
 
     MappingPipeResult(candidateTable, columnsMapping, candidateKeys, tableMatching)
 

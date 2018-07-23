@@ -5,7 +5,7 @@ import models.matching.matrix._
 
 class TableMatchingMatrixExtractor() {
 
-  def process(tableMatching: TableMatching): MatchMatrix = {
+  def extract(tableMatching: TableMatching): MatchMatrix = {
 
     MatchMatrix apply
       tableMatching
