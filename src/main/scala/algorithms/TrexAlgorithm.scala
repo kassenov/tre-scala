@@ -5,8 +5,7 @@ import models.index.IndexFields
 import org.apache.lucene.analysis.Analyzer
 import org.apache.lucene.index.IndexReader
 import pipes.filtering._
-import pipes.mapping.{TableCandidateKeysExtractingPipe, TableMappingPipe, TableMatchingMatrixExtractingPipe, TableMatchingPipe}
-import pipes.{TableMappingPipe, TableMatchingMatrixExtractingPipe, TableMatchingPipe}
+import pipes.mapping.{TableCandidateKeysExtractor, TableMappingExtractor, TableMatchingMatrixExtractor, TableMatchingExtractor}
 import search.{KeySearcherWithSimilarity, TableSearcher, ValueSearcherWithSimilarity}
 import statistics.LuceneIndexTermFrequencyProvider
 import transformers.Transformer
@@ -34,24 +33,24 @@ class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer) extends Algori
         .par
         .map { jsonTable => transformer.rawJsonToTable(jsonTable) }
         .filter { candidateTable => sizeFilter.filter(candidateTable) }
-        .map { candidateTable => processByMappingPipes(queryTable, candidateTable) }
+        .map { candidateTable => processByMappingPipe(queryTable, candidateTable) }
         .filter { mappingResult => candidateKeysFilter.filter(mappingResult.candidateKeys) }
 
 
 
   }
 
-  val tableMatchingPipe = new TableMatchingPipe(keySearch, valueSearch)
-  val tableMatchingMatrixExtractingPipe = new TableMatchingMatrixExtractingPipe()
-  val tableMappingPipe = new TableMappingPipe()
-  val tableCandidateKeysExtractingPipe = new TableCandidateKeysExtractingPipe()
+  val tableMatchingExtractor = new TableMatchingExtractor(keySearch, valueSearch)
+  val tableMatchingMatrixExtractor = new TableMatchingMatrixExtractor()
+  val tableMappingExtractor = new TableMappingExtractor()
+  val tableCandidateKeysExtractor = new TableCandidateKeysExtractor()
 
-  private def processByMappingPipes(queryTable: Table, candidateTable: Table): MappingPipesResult = {
+  private def processByMappingPipe(queryTable: Table, candidateTable: Table): MappingPipesResult = {
 
-    val tableMatching = tableMatchingPipe.process(queryTable, candidateTable)
-    val matchingMatrix = tableMatchingMatrixExtractingPipe.process(tableMatching)
-    val columnsMapping = tableMappingPipe.process(matchingMatrix)
-    val candidateKeys = tableCandidateKeysExtractingPipe.process(candidateTable, tableMatching)
+    val tableMatching = tableMatchingExtractor.process(queryTable, candidateTable)
+    val matchingMatrix = tableMatchingMatrixExtractor.process(tableMatching)
+    val columnsMapping = tableMappingExtractor.process(matchingMatrix)
+    val candidateKeys = tableCandidateKeysExtractor.process(candidateTable, tableMatching)
 
     MappingPipesResult(candidateTable, columnsMapping, candidateKeys, tableMatching)
 

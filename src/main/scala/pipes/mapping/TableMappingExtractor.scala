@@ -4,7 +4,7 @@ import models.mapping.ColumnsMapping
 import models.matching.matrix.MatchMatrix
 import models.score.{MappingScore, TableMappingScore}
 
-class TableMappingPipe() {
+class TableMappingExtractor() {
 
   def process(matchMatrix: MatchMatrix): ColumnsMapping = {
 

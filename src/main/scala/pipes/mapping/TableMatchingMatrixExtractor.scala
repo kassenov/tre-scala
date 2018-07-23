@@ -3,7 +3,7 @@ package pipes.mapping
 import models.matching.TableMatching
 import models.matching.matrix._
 
-class TableMatchingMatrixExtractingPipe() {
+class TableMatchingMatrixExtractor() {
 
   def process(tableMatching: TableMatching): MatchMatrix = {
 

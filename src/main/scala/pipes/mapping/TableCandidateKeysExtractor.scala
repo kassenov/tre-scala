@@ -3,7 +3,7 @@ package pipes.mapping
 import models.Table
 import models.matching.{KeyWithIndex, TableMatching}
 
-class TableCandidateKeysExtractingPipe() {
+class TableCandidateKeysExtractor() {
 
   def process(table: Table, tableMatching: TableMatching): List[KeyWithIndex] = {
 

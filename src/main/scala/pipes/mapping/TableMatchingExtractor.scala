@@ -6,7 +6,7 @@ import search.{KeySearcher, ValueSearcher}
 
 import scala.collection.mutable
 
-class TableMatchingPipe(keySearch: KeySearcher, valueSearch: ValueSearcher) {
+class TableMatchingExtractor(keySearch: KeySearcher, valueSearch: ValueSearcher) {
 
   def process(queryTable: Table, table: Table): TableMatching = {
 
