@@ -1,11 +1,11 @@
 package algorithms
 
-import models.{MappingPipesResult, Table}
+import models.{MappingPipeResult, Table}
 import models.index.IndexFields
 import org.apache.lucene.analysis.Analyzer
 import org.apache.lucene.index.IndexReader
 import pipes.filtering._
-import pipes.mapping.{TableCandidateKeysExtractor, TableMappingExtractor, TableMatchingMatrixExtractor, TableMatchingExtractor}
+import pipes.mapping._
 import search.{KeySearcherWithSimilarity, TableSearcher, ValueSearcherWithSimilarity}
 import statistics.LuceneIndexTermFrequencyProvider
 import transformers.Transformer
@@ -14,13 +14,19 @@ class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer) extends Algori
 
   private val transformer = new Transformer
 
+  // Searchers
+
   private val entitiesTermFrequencyProvider = new LuceneIndexTermFrequencyProvider(indexReader, IndexFields.entities)
-  private val keySearch = new KeySearcherWithSimilarity(entitiesTermFrequencyProvider, analyzer)
+  private val keySearcher = new KeySearcherWithSimilarity(entitiesTermFrequencyProvider, analyzer)
 
   private val contentTermFrequencyProvider = new LuceneIndexTermFrequencyProvider(indexReader, IndexFields.content)
-  private val valueSearch = new ValueSearcherWithSimilarity(contentTermFrequencyProvider, analyzer)
+  private val valueSearcher = new ValueSearcherWithSimilarity(contentTermFrequencyProvider, analyzer)
 
-  private var usedTables: List[Table] = _
+  // Pipes
+
+  private val mappingPipe = new MappingPipe(keySearcher, valueSearcher)
+
+  //private var usedTables: List[Table] = _
 
   val sizeFilter = new FilterTableBySize(minRows = 5, minCols = 3)
   val candidateKeysFilter = new FilterTableByCandidateKeys()
@@ -33,27 +39,12 @@ class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer) extends Algori
         .par
         .map { jsonTable => transformer.rawJsonToTable(jsonTable) }
         .filter { candidateTable => sizeFilter.filter(candidateTable) }
-        .map { candidateTable => processByMappingPipe(queryTable, candidateTable) }
+        .map { candidateTable => mappingPipe.process(queryTable, candidateTable) }
         .filter { mappingResult => candidateKeysFilter.filter(mappingResult.candidateKeys) }
 
 
 
   }
 
-  val tableMatchingExtractor = new TableMatchingExtractor(keySearch, valueSearch)
-  val tableMatchingMatrixExtractor = new TableMatchingMatrixExtractor()
-  val tableMappingExtractor = new TableMappingExtractor()
-  val tableCandidateKeysExtractor = new TableCandidateKeysExtractor()
-
-  private def processByMappingPipe(queryTable: Table, candidateTable: Table): MappingPipesResult = {
-
-    val tableMatching = tableMatchingExtractor.process(queryTable, candidateTable)
-    val matchingMatrix = tableMatchingMatrixExtractor.process(tableMatching)
-    val columnsMapping = tableMappingExtractor.process(matchingMatrix)
-    val candidateKeys = tableCandidateKeysExtractor.process(candidateTable, tableMatching)
-
-    MappingPipesResult(candidateTable, columnsMapping, candidateKeys, tableMatching)
-
-  }
 
 }
