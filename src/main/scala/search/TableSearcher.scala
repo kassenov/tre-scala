@@ -8,11 +8,13 @@ import org.apache.lucene.queryparser.classic.QueryParser
 import org.apache.lucene.search.{BooleanClause, BooleanQuery, IndexSearcher}
 import org.apache.lucene.store.SimpleFSDirectory
 
+import scala.collection.parallel.immutable.ParSeq
+
 trait TableSearcher {
 
   var previouslyFoundDocIds: List[Int] = _
 
-  def getRawJsonTablesByKeys(keys: List[String]): List[String]
+  def getRawJsonTablesByKeys(keys: List[String]): ParSeq[String]
 
 }
 
@@ -23,7 +25,7 @@ class LuceneTableSearcher(indexPath: String) extends TableSearcher {
   private lazy val reader = DirectoryReader.open(luceneIndexDir)
   private lazy val searcher = new IndexSearcher(reader)
 
-  def getRawJsonTablesByKeys(keys: List[String]): List[String] = {
+  def getRawJsonTablesByKeys(keys: List[String]): ParSeq[String] = {
 
     val query = buildKeysQuery(keys)
     val scoutSearchResult = searcher.search(query, 1)
@@ -42,7 +44,6 @@ class LuceneTableSearcher(indexPath: String) extends TableSearcher {
     docs
       .par
       .map(doc => searcher.doc(doc).get("raw"))
-      .toList
 
   }
 

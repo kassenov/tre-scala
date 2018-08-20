@@ -17,7 +17,7 @@ class MappingPipe(keySearcher: KeySearcher, valueSearcher: ValueSearcher) {
     val columnsMapping = tableMappingExtractor.extract(matchingMatrix)
     val candidateKeys = tableCandidateKeysExtractor.extract(candidateTable, tableMatching)
 
-    MappingPipeResult(candidateTable, columnsMapping, candidateKeys, tableMatching)
+    MappingPipeResult(columnsMapping, candidateKeys, tableMatching)
 
   }
 

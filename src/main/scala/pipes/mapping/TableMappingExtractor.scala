@@ -29,7 +29,17 @@ class TableMappingExtractor() {
       case None => None
     }
 
-    ColumnsMapping(columns = columns, TableMappingScore(columns = columnsScore, rows = List.empty))
+    val aggregatedByColumns = MappingScore(score = columnsScore.flatten.map(clm => clm.score).sum)
+
+    ColumnsMapping(
+      columns = columns,
+      TableMappingScore(
+        columns = columnsScore,
+        aggregatedByColumns = aggregatedByColumns,
+        rows = List.empty,
+        aggregatedByRows = MappingScore(score = 0),
+        total = aggregatedByColumns
+      ))
 
 //    val queryColumnsCount = matchMatrix.columns.size
 //
