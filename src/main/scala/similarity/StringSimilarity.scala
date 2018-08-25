@@ -30,7 +30,7 @@ class ByWordLevenshteinSimilarity(tfWeighter: TermFrequencyScorer,
 
     val totalWeight = query.total + in.total
 
-    query
+    val perWordWeigts = query
       .words.par
       .zipWithIndex.map { case (queryWord, queryWordIdx) =>
 
@@ -43,9 +43,15 @@ class ByWordLevenshteinSimilarity(tfWeighter: TermFrequencyScorer,
             normQueryWordWeight + normInWordWeight
           }
 
-    }.sum match {
-      case Some(score) if score > threshold => Some(score)
-      case None                             => None
+    }.toList.flatten
+
+    if (perWordWeigts.isEmpty) {
+      None
+    } else {
+      perWordWeigts.sum match {
+        case score if score > threshold => Some(score)
+        case score                      => None
+      }
     }
 
   }
