@@ -13,10 +13,10 @@ class TableCandidateKeysExtractor() {
 
     Table.getKeys(table)
       .zipWithIndex
-      .map {
-        case (key, idx) if !excludeIdxes.contains(idx) => KeyWithIndex(key, idx)
+      .flatMap {
+        case (key, idx) if !excludeIdxes.contains(idx) => Some(KeyWithIndex(key, idx))
         case _ => None
-      }.flatten
+      }
 
   }
 

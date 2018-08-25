@@ -121,7 +121,7 @@ class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer) extends Algori
     // TODO Getting top
     val topCandidateKeys = sortedCandidateKeyToQueryTableSim.map { case (key, score) => key }
 
-
+    List.empty
 
   }
 

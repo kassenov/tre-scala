@@ -58,7 +58,7 @@ class TableMatchingExtractor(keySearch: KeySearcher, valueSearch: ValueSearcher)
 
         if (queryClmIdx == 0) {
 
-          None
+          (queryClmIdx, List.empty)
 
         } else {
 
@@ -71,7 +71,7 @@ class TableMatchingExtractor(keySearch: KeySearcher, valueSearch: ValueSearcher)
 
         }
 
-      }.flatten
+      }
 
   }
 

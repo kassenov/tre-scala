@@ -27,7 +27,7 @@ class ValueSearcherWithSimilarity(termFrequencyProvider: TermFrequencyProvider, 
 
   override def getValueMatchInValues(value: String, rowValues: List[String], exclude: List[Int]): Option[ValueMatchResult] = {
 
-    val matchSim =
+    val list =
       rowValues
         .par
         .zipWithIndex
@@ -43,7 +43,18 @@ class ValueSearcherWithSimilarity(termFrequencyProvider: TermFrequencyProvider, 
           }
 
         }.toList
-        .maxBy{ case (_, sim) => sim }
+
+    // FIXME - this should be be maxBy
+    var maxSim: Double = 0
+    var idxWithMaxSim: Int = 0
+    list.foreach { case (idx, sim) =>
+      if (sim > maxSim) {
+        maxSim = sim
+        idxWithMaxSim = idx
+      }
+    }
+
+    val matchSim = list.maxBy{ case (_, sim) => sim }
 
     matchSim match {
       case (idx, sim) if sim > 0 => Some(ValueMatchResult(idx, sim))
