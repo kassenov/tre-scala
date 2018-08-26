@@ -1,6 +1,7 @@
 package similarity
 
 import org.apache.commons.text.similarity.LevenshteinDistance
+import similarity.WeightedString.isAlpha
 
 
 trait StringSimilarity {
@@ -22,37 +23,66 @@ class ByWordLevenshteinSimilarity(tfWeighter: TermFrequencyScorer,
     */
   def sim(query: String, in: String): Option[Double] = {
 
-    getSim(WeightedString.get(query, tfWeighter), WeightedString.get(in, tfWeighter))
+//    getSim(WeightedString.get(query, tfWeighter), WeightedString.get(in, tfWeighter))
+    getSim(query, in)
 
   }
 
-  private def getSim(query: WeightedString, in: WeightedString, threshold: Double = 0.8): Option[Double] = {
+  def isAlpha(name: String): Boolean = name.matches("[a-zA-Z]+")
 
-    val totalWeight = query.total + in.total
+//  private def getSim(query: WeightedString, in: WeightedString, threshold: Double = 0.8): Option[Double] = {
+  private def getSim(query: String, in: String, threshold: Double = 0.8): Option[Double] = {
 
-    val perWordWeights = query
-      .words.par
-      .zipWithIndex.map { case (queryWord, queryWordIdx) =>
+    val queryWords = query.split(" ").toList
+    val inWords = in.split(" ").toList
 
-        in.words.par
-          .zipWithIndex
-          .find { case (inWord, _) => getMatchScore(queryWord, inWord) > threshold }
-          .map { case (_, inWordIdx) =>
-            val normQueryWordWeight = query.weights(queryWordIdx) / totalWeight
-            val normInWordWeight = in.weights(inWordIdx) / totalWeight
-            normQueryWordWeight + normInWordWeight
-          }
+    val scores =
+      queryWords.par
+        .filter(word => isAlpha(word))
+        .zipWithIndex.flatMap { case (queryWord, queryWordIdx) =>
 
-    }.toList.flatten
+          inWords.par
+            .filter(word => isAlpha(word))
+            .zipWithIndex
+            .map { case (inWord, inWordIdx) =>
+              val matchScore = getMatchScore(queryWord, inWord)
+              (matchScore, queryWordIdx, inWordIdx)
+            }
+            .find { case (matchScore, _, _) => matchScore > threshold }
+            .map { case (matchScore, _, _) => //inWordIdx) =>
+              //(queryWordIdx, inWordIdx)
+              matchScore
+            }
 
-    if (perWordWeights.isEmpty) {
-      None
-    } else {
-      perWordWeights.sum match {
-        case score if score > threshold => Some(score)
-        case _                          => None
-      }
-    }
+        }.toList
+
+    Some(scores.sum)
+
+//    val totalWeight = query.total + in.total
+//
+//    val perWordWeights = query
+//      .words.par
+//      .zipWithIndex.map { case (queryWord, queryWordIdx) =>
+//
+//        in.words.par
+//          .zipWithIndex
+//          .find { case (inWord, _) => getMatchScore(queryWord, inWord) > threshold }
+//          .map { case (_, inWordIdx) =>
+//            val normQueryWordWeight = query.weights(queryWordIdx) / totalWeight
+//            val normInWordWeight = in.weights(inWordIdx) / totalWeight
+//            normQueryWordWeight + normInWordWeight
+//          }
+//
+//    }.toList.flatten
+//
+//    if (perWordWeights.isEmpty) {
+//      None
+//    } else {
+//      perWordWeights.sum match {
+//        case score if score > threshold => Some(score)
+//        case _                          => None
+//      }
+//    }
 
   }
 
@@ -77,7 +107,7 @@ class ByWordLevenshteinSimilarity(tfWeighter: TermFrequencyScorer,
     */
   private def getLevenshteinScore(queryTerm: String, inTerm: String): Double = {
     val distance = levenshteinDistance.apply(queryTerm, inTerm)
-    1.0 - distance / math.max(queryTerm.length, inTerm.length)
+    1.0 - distance.toDouble / math.max(queryTerm.length, inTerm.length).toDouble
   }
 
   private def getExactMatchScore(queryTerm: String, inTerm: String): Double = {
