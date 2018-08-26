@@ -12,27 +12,27 @@ import scala.collection.parallel.immutable.ParSeq
 
 trait TableSearcher {
 
-  var previouslyFoundDocIds: List[Int] = _
+  var previouslyFoundDocIds: List[Int] = List.empty
 
   def getRawJsonTablesByKeys(keys: List[String]): ParSeq[String]
 
 }
 
-class LuceneTableSearcher(indexPath: String) extends TableSearcher {
+class LuceneTableSearcher(indexSearcher: IndexSearcher) extends TableSearcher {
 
-  private lazy val luceneIndexDir = new SimpleFSDirectory(new File(indexPath).toPath)
-
-  private lazy val reader = DirectoryReader.open(luceneIndexDir)
-  private lazy val searcher = new IndexSearcher(reader)
+//  private val luceneIndexDir = new SimpleFSDirectory(new File(indexPath).toPath)
+//
+//  private val reader = DirectoryReader.open(luceneIndexDir)
+//  private val searcher = new IndexSearcher(reader)
 
   def getRawJsonTablesByKeys(keys: List[String]): ParSeq[String] = {
 
     val query = buildKeysQuery(keys)
-    val scoutSearchResult = searcher.search(query, 1)
+    val scoutSearchResult = indexSearcher.search(query, 1)
 
     println(s"Total found ${scoutSearchResult.totalHits.toInt} tables")
 
-    val docs = searcher
+    val docs = indexSearcher
       .search(query, scoutSearchResult.totalHits.toInt)
       .scoreDocs
       .filterNot(scoreDoc => previouslyFoundDocIds.contains(scoreDoc.doc))
@@ -43,7 +43,7 @@ class LuceneTableSearcher(indexPath: String) extends TableSearcher {
 
     docs
       .par
-      .map(doc => searcher.doc(doc).get("raw"))
+      .map(doc => indexSearcher.doc(doc).get("raw"))
 
   }
 

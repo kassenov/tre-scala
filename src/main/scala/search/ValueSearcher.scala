@@ -67,6 +67,7 @@ class ValueSearcherWithSimilarity(termFrequencyProvider: TermFrequencyProvider, 
   private def analyze(value: String): String = {
     val result = new mutable.ArrayBuffer[String]()
     val stream = analyzer.tokenStream(null, new StringReader(value))
+    stream.reset()
     while (stream.incrementToken())
       result += stream.getAttribute(classOf[CharTermAttribute]).toString
     stream.end()

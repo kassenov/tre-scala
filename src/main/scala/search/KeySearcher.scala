@@ -52,6 +52,7 @@ class KeySearcherWithSimilarity(termFrequencyProvider: TermFrequencyProvider, an
   private def analyze(key: String): String = {
     val result = new mutable.ArrayBuffer[String]()
     val stream = analyzer.tokenStream(null, new StringReader(key))
+    stream.reset()
     while (stream.incrementToken())
       result += stream.getAttribute(classOf[CharTermAttribute]).toString
     stream.end()

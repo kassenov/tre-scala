@@ -1,7 +1,7 @@
 package pipes.keysExtracting
 
-class CandidateKeysExtractingPipe {
-
-  def process():List[String] {}
-
-}
+//class CandidateKeysExtractingPipe {
+//
+//  def process():List[String] {}
+//
+//}
