@@ -35,8 +35,7 @@ class ValueSearcherWithSimilarity(termFrequencyProvider: TermFrequencyProvider, 
 
           if (!exclude.contains(idx)) {
             similarity.sim(analyzeQueryValue(value), analyze(tableRow)) match {
-              case Some(sim) => (idx, sim)
-              case None => (idx, 0.0)
+              case sim => (idx, sim)
             }
           } else {
             (idx, 0.0)

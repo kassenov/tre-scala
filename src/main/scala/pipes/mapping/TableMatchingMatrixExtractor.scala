@@ -7,24 +7,30 @@ class TableMatchingMatrixExtractor() {
 
   def extract(tableMatching: TableMatching): MatchMatrix = {
 
-    MatchMatrix apply
+    val matchingMatrixColumns =
       tableMatching
         .keyMatches
         .map { keyMatch =>
 
           // TODO Only first match
-          MatchingMatrixColumn apply
+          val matchingMatrixCells =
             keyMatch.rowMatchings.head.cellMatches
               .zipWithIndex
               .map { case (cellMatch, queryClmIdx) =>
 
-                MatchingMatrixCell apply
+                val idxes =
                   cellMatch.valueMatches
                     .map (valueMatch => valueMatch.idx)
 
+                MatchingMatrixCell(idxes)
+
               }
 
+          MatchingMatrixColumn(matchingMatrixCells)
+
         }
+
+    MatchMatrix(matchingMatrixColumns)
 
   }
 
