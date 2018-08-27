@@ -30,8 +30,7 @@ class KeySearcherWithSimilarity(termFrequencyProvider: TermFrequencyProvider, an
       .zipWithIndex
       .map { case (tableKey, idx) =>
         similarity.sim(analyzeQueryKey(key), analyze(tableKey)) match {
-          case Some(sim) => ValueMatchResult(idx, sim)
-          case None      => ValueMatchResult(idx, 0.0)
+          case sim => ValueMatchResult(idx, sim)
         }
       }.toList
 
