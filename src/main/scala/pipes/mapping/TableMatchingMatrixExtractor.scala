@@ -12,9 +12,11 @@ class TableMatchingMatrixExtractor() {
         .keyMatches
         .map { keyMatch =>
 
-          // TODO Only first match
           val matchingMatrixCells =
-            keyMatch.rowMatchings.head.cellMatches
+            keyMatch
+              .rowMatchings
+              .head // TODO Only first match
+              .cellMatches
               .zipWithIndex
               .map { case (cellMatch, queryClmIdx) =>
 

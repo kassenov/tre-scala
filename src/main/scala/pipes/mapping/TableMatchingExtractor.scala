@@ -12,20 +12,35 @@ class TableMatchingExtractor(keySearch: KeySearcher, valueSearch: ValueSearcher)
 
     val keyValueMatches =
       getQueryKeysToTableKeyMatches(queryTable, table)
-        .map{ case (queryRowIdx, tableKeyMatches) =>
+        .flatMap{ case (queryRowIdx, tableKeyMatches) =>
 
           val rowMatches =
-            tableKeyMatches.map { keyMatch =>
+            tableKeyMatches
+              .flatMap { keyMatch =>
 
-              val cellMatches =
-                getRowCellMatches(queryTable, queryRowIdx, keyMatch, table)
-                  .map { case (queryClmIdx, valueMatches) => CellMatching(valueMatches)}
+                val cellMatches =
+                  getRowCellMatches(queryTable, queryRowIdx, keyMatch, table)
+                    .flatMap { case (queryClmIdx, valueMatches) =>
+                      if (valueMatches.isEmpty) {
+                        None
+                      } else {
+                        Some(CellMatching(valueMatches))
+                      }
+                    }
 
-              RowMatching(keyMatch.idx, cellMatches)
+                if (cellMatches.isEmpty) {
+                  None
+                } else {
+                  Some(RowMatching(keyMatch.idx, cellMatches))
+                }
 
-            }
+              }
 
-          KeyMatching(queryRowIdx, rowMatches)
+          if (rowMatches.isEmpty) {
+            None
+          } else {
+            Some(KeyMatching(queryRowIdx, rowMatches))
+          }
 
         }
 
