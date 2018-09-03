@@ -1,11 +1,11 @@
 package pipes.mapping
 
-import models.matching.TableMatching
+import models.matching.TableMatches
 import models.matching.matrix._
 
 class TableMatchingMatrixExtractor() {
 
-  def extract(tableMatching: TableMatching): MatchMatrix = {
+  def extract(tableMatching: TableMatches): MatchMatrix = {
 
     val matchingMatrixColumns =
       tableMatching
@@ -14,7 +14,7 @@ class TableMatchingMatrixExtractor() {
 
           val matchingMatrixCells =
             keyMatch
-              .rowMatchings
+              .rowMatches
               .head // TODO Only first match
               .cellMatches
               .zipWithIndex

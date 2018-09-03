@@ -63,7 +63,7 @@ class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer) extends Algori
       }
 
     // candidate keys
-    val candidateKeys = candidateTableToCandidateKeys.flatten { case (_, keys) => keys }.toSet
+    val candidateKeys = candidateTableToCandidateKeys.flatten { case (_, keys) => keys }.toList.toSet
 
     // candidate key to table
     val candidateKeyToCandidateTables =

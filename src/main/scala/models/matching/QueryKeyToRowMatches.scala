@@ -4,6 +4,6 @@ package models.matching
   * Matching for a key query table key
   *
   * @param queryRowIdx row index of the query table
-  * @param rowMatchings
+  * @param rowMatches
   */
-case class KeyMatching(queryRowIdx: Int, rowMatchings: List[RowMatching])
+case class QueryKeyToRowMatches(queryRowIdx: Int, rowMatches: List[RowMatch])

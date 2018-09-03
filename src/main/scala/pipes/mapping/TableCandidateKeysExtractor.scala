@@ -1,14 +1,14 @@
 package pipes.mapping
 
 import models.Table
-import models.matching.{KeyWithIndex, TableMatching}
+import models.matching.{KeyWithIndex, TableMatches}
 
 class TableCandidateKeysExtractor() {
 
-  def extract(table: Table, tableMatching: TableMatching): List[KeyWithIndex] = {
+  def extract(table: Table, tableMatching: TableMatches): List[KeyWithIndex] = {
 
     val excludeIdxes = tableMatching.keyMatches.flatten { keyMatch =>
-      keyMatch.rowMatchings.map(rowMatch => rowMatch.candidateRowId)
+      keyMatch.rowMatches.map(rowMatch => rowMatch.candidateRowId)
     }
 
     Table.getKeys(table)

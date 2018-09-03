@@ -8,18 +8,18 @@ import scala.collection.mutable
 
 class TableMatchingExtractor(keySearch: KeySearcher, valueSearch: ValueSearcher) {
 
-  def extract(queryTable: Table, table: Table): TableMatching = {
+  def extract(queryTable: Table, candidateTable: Table): TableMatches = {
 
     val keyValueMatches =
-      getQueryKeysToTableKeyMatches(queryTable, table)
+      getQueryKeysToTableKeyMatches(queryTable, candidateTable)
         .flatMap{ case (queryRowIdx, tableKeyMatches) =>
 
-          val rowMatches =
+          val rowMatches = // Row matches of the query key in the candidate table
             tableKeyMatches
               .flatMap { keyMatch =>
 
                 val cellMatches =
-                  getRowCellMatches(queryTable, queryRowIdx, keyMatch, table)
+                  getRowCellMatches(queryTable, queryRowIdx, keyMatch, candidateTable)
                     .flatMap { case (queryClmIdx, valueMatches) =>
                       if (valueMatches.isEmpty) {
                         None
@@ -31,7 +31,7 @@ class TableMatchingExtractor(keySearch: KeySearcher, valueSearch: ValueSearcher)
                 if (cellMatches.isEmpty) {
                   None
                 } else {
-                  Some(RowMatching(keyMatch.idx, cellMatches))
+                  Some(RowMatch(keyMatch.idx, cellMatches))
                 }
 
               }
@@ -39,12 +39,12 @@ class TableMatchingExtractor(keySearch: KeySearcher, valueSearch: ValueSearcher)
           if (rowMatches.isEmpty) {
             None
           } else {
-            Some(KeyMatching(queryRowIdx, rowMatches))
+            Some(QueryKeyToRowMatches(queryRowIdx, rowMatches))
           }
 
         }
 
-    TableMatching(keyValueMatches)
+    TableMatches(keyValueMatches)
 
   }
 
