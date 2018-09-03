@@ -8,7 +8,7 @@ import scala.collection.mutable
 
 class TableMatchingExtractor(keySearch: KeySearcher, valueSearch: ValueSearcher) {
 
-  def extract(queryTable: Table, candidateTable: Table): TableMatches = {
+  def extract(queryTable: Table, candidateTable: Table): TableMatch = {
 
     val keyValueMatches =
       getQueryKeyIdxToCandidateTableMatches(queryTable, candidateTable)
@@ -19,7 +19,7 @@ class TableMatchingExtractor(keySearch: KeySearcher, valueSearch: ValueSearcher)
               .flatMap { keyMatch =>
 
                 val cellMatches =
-                  getRowCellMatches(queryTable, queryRowIdx, keyMatch, candidateTable)
+                  getRowCellMatches(queryTable, queryRowIdx, keyMatch.idx, candidateTable)
                     .flatMap { case (queryClmIdx, valueMatches) =>
                       if (valueMatches.isEmpty) {
                         None
@@ -44,7 +44,7 @@ class TableMatchingExtractor(keySearch: KeySearcher, valueSearch: ValueSearcher)
 
         }
 
-    TableMatches(keyValueMatches)
+    TableMatch(keyValueMatches)
 
   }
 
@@ -69,9 +69,9 @@ class TableMatchingExtractor(keySearch: KeySearcher, valueSearch: ValueSearcher)
 
   }
 
-  private def getRowCellMatches(queryTable: Table, queryRowIdx: Int, keyMatch: ValueMatchResult, table: Table): List[(Int, List[ValueMatchResult])] = {
+  private def getRowCellMatches(queryTable: Table, queryRowIdx: Int, candidateRowIdx: Int, candidateTable: Table): List[(Int, List[ValueMatchResult])] = {
 
-    val tableRow = Table.getRowByIndex(keyMatch.idx, table)
+    val tableRow = Table.getRowByIndex(candidateRowIdx, candidateTable)
 
     getQueryRow(queryTable, queryRowIdx)
       .zipWithIndex
@@ -83,7 +83,7 @@ class TableMatchingExtractor(keySearch: KeySearcher, valueSearch: ValueSearcher)
 
         } else {
 
-          (valueSearch.getValueMatchInValues(queryRow, tableRow, exclude = List(table.keyIdx.getOrElse(0))) match {
+          (valueSearch.getValueMatchInValues(queryRow, tableRow, exclude = List(candidateTable.keyIdx.getOrElse(0))) match {
             case None             => List.empty
             case Some(valueMatch) => List(valueMatch)
           }) match {

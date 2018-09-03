@@ -5,4 +5,4 @@ package models.matching
   *
   * @param keyMatches
   */
-case class TableMatches(keyMatches: List[QueryKeyToRowMatches])
+case class TableMatch(keyMatches: List[QueryKeyToRowMatches])

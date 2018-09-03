@@ -1,14 +1,14 @@
 package pipes.mapping
 
-import models.matching.TableMatches
+import models.matching.TableMatch
 import models.matching.matrix._
 
 class TableMatchingMatrixExtractor() {
 
-  def extract(tableMatching: TableMatches): MatchMatrix = {
+  def extract(tableMatch: TableMatch): MatchMatrix = {
 
     val matchingMatrixColumns =
-      tableMatching
+      tableMatch
         .keyMatches
         .map { keyMatch =>
 

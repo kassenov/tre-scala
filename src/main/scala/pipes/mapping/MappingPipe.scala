@@ -12,15 +12,15 @@ class MappingPipe(keySearcher: KeySearcher, valueSearcher: ValueSearcher) {
 
   def process(queryTable: Table, candidateTable: Table): Option[MappingPipeResult] = {
 
-    val tableMatching = tableMatchingExtractor.extract(queryTable, candidateTable)
-    if (tableMatching.keyMatches.isEmpty) {
+    val tableMatch = tableMatchingExtractor.extract(queryTable, candidateTable)
+    if (tableMatch.keyMatches.isEmpty) {
       None
     } else {
-      val matchingMatrix = tableMatchingMatrixExtractor.extract(tableMatching)
-      val columnsMapping = tableMappingExtractor.extract(matchingMatrix)
-      val candidateKeys = tableCandidateKeysExtractor.extract(candidateTable, tableMatching)
+      val matchingMatrix = tableMatchingMatrixExtractor.extract(tableMatch)
+      val columnsMapping = tableMappingExtractor.extract(matchingMatrix, tableMatch)
+      val candidateKeys = tableCandidateKeysExtractor.extract(candidateTable, tableMatch)
 
-      Some(MappingPipeResult(columnsMapping, candidateKeys, tableMatching))
+      Some(MappingPipeResult(columnsMapping, candidateKeys, tableMatch))
     }
 
   }
