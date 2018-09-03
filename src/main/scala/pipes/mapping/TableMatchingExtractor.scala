@@ -11,7 +11,7 @@ class TableMatchingExtractor(keySearch: KeySearcher, valueSearch: ValueSearcher)
   def extract(queryTable: Table, candidateTable: Table): TableMatches = {
 
     val keyValueMatches =
-      getQueryKeysToTableKeyMatches(queryTable, candidateTable)
+      getQueryKeyIdxToCandidateTableMatches(queryTable, candidateTable)
         .flatMap{ case (queryRowIdx, tableKeyMatches) =>
 
           val rowMatches = // Row matches of the query key in the candidate table
@@ -48,15 +48,21 @@ class TableMatchingExtractor(keySearch: KeySearcher, valueSearch: ValueSearcher)
 
   }
 
-  private def getQueryKeysToTableKeyMatches(queryTable: Table, table: Table): List[(Int, List[ValueMatchResult])] = {
+  private def getQueryKeyIdxToCandidateTableMatches(queryTable: Table, candidateTable: Table): List[(Int, List[ValueMatchResult])] = {
 
-    val tableKeys = Table.getKeys(table)
+    val tableKeys = Table.getKeys(candidateTable)
 
     Table.getKeys(queryTable)
       .zipWithIndex
       .map{ case (queryKey, queryRowIdx) =>
 
-        val matches = keySearch.getValueMatchesOfKeyInKeys(queryKey, tableKeys)
+        val matches =
+          keySearch.getValueMatchesOfKeyInKeys(queryKey, tableKeys)
+          .flatMap {
+            case m if m.sim > 0 => Some(m)
+            case _ => None
+          }
+
         (queryRowIdx, matches)
 
       }
