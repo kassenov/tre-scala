@@ -1,6 +1,6 @@
 package algorithms
 
-import models.{MappingPipeResult, Table}
+import models.Table
 import models.index.IndexFields
 import org.apache.lucene.analysis.Analyzer
 import org.apache.lucene.index.IndexReader
@@ -8,6 +8,7 @@ import pipes.filtering._
 import pipes.mapping._
 import search.{KeySearcherWithSimilarity, TableSearcher, ValueSearcherWithSimilarity}
 import statistics.LuceneIndexTermFrequencyProvider
+import thresholding.otsu
 import transformers.Transformer
 
 class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer) extends Algorithm {
@@ -124,10 +125,19 @@ class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer) extends Algori
 
       }
 
-    val sortedCandidateKeyToQueryTableSim = candidateKeyToQueryTableSim.toList.sortBy{ case (key, score) => score }
+    val similarities = candidateKeyToQueryTableSim.toMap.map{ case (_, score) => score * 100 }.toList
+    val threshold = otsu.getThreshold(similarities) / 100
+
+    val topCandidateKeys = candidateKeyToQueryTableSim
+      .filter { case (_, score) => score >= threshold }
+      .map { case (key, _) => key }
+      .toList
+
+
+//    val sortedCandidateKeyToQueryTableSim = candidateKeyToQueryTableSim.toList.sortBy{ case (key, score) => score }
 
     // TODO Getting top
-    val topCandidateKeys = sortedCandidateKeyToQueryTableSim.map { case (key, score) => key }
+//    val topCandidateKeys = sortedCandidateKeyToQueryTableSim.map { case (key, score) => key }
 
     List.empty
 
