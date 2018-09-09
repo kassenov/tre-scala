@@ -8,7 +8,7 @@ class MappingPipe(keySearcher: KeySearcher, valueSearcher: ValueSearcher) {
   val tableMatchingExtractor = new TableMatchingExtractor(keySearcher, valueSearcher)
   val tableMatchingMatrixExtractor = new TableMatchingMatrixExtractor()
   val tableMappingExtractor = new TableMappingExtractor()
-  val tableCandidateKeysExtractor = new TableCandidateKeysExtractor()
+  val tableCandidateKeysWithIndexesExtractor = new TableCandidateKeysWithIndexesExtractor()
 
   def process(queryTable: Table, candidateTable: Table): Option[MappingPipeResult] = {
 
@@ -18,9 +18,9 @@ class MappingPipe(keySearcher: KeySearcher, valueSearcher: ValueSearcher) {
     } else {
       val matchingMatrix = tableMatchingMatrixExtractor.extract(tableMatch)
       val columnsMapping = tableMappingExtractor.extract(matchingMatrix, tableMatch)
-      val candidateKeys = tableCandidateKeysExtractor.extract(candidateTable, tableMatch)
+      val candidateKeysWithIndexes = tableCandidateKeysWithIndexesExtractor.extract(candidateTable, tableMatch)
 
-      Some(MappingPipeResult(columnsMapping, candidateKeys, tableMatch))
+      Some(MappingPipeResult(columnsMapping, candidateKeysWithIndexes, tableMatch))
     }
 
   }

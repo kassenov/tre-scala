@@ -36,7 +36,7 @@ class TableMatchingExtractor(keySearch: KeySearcher, valueSearch: ValueSearcher)
 
               }
 
-          if (rowMatches.isEmpty) {
+          if (rowMatches.isEmpty || rowMatches.length > 1) { // TODO Note that duplicate keys are not allowed
             None
           } else {
             Some(QueryKeyToRowMatches(queryRowIdx, rowMatches))

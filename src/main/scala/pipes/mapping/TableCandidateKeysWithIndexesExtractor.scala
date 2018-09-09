@@ -3,7 +3,7 @@ package pipes.mapping
 import models.Table
 import models.matching.{KeyWithIndex, TableMatch}
 
-class TableCandidateKeysExtractor() {
+class TableCandidateKeysWithIndexesExtractor() {
 
   def extract(table: Table, tableMatching: TableMatch): List[KeyWithIndex] = {
 
@@ -14,7 +14,7 @@ class TableCandidateKeysExtractor() {
     Table.getKeys(table)
       .zipWithIndex
       .flatMap {
-        case (key, idx) if !excludeIdxes.contains(idx) => Some(KeyWithIndex(key, idx))
+        case (key, idx) if !excludeIdxes.contains(idx) => Some(KeyWithIndex(key.toLowerCase, idx))
         case _ => None
       }
 
