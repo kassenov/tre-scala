@@ -1,3 +1,3 @@
 package models.matching
 
-case class ValueMatchResult(idx: Int, sim: Double)
+case class ValueMatchResult(candidateColumnIdx: Int, sim: Double)

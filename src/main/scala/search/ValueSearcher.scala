@@ -13,7 +13,7 @@ import scala.collection.mutable
 trait ValueSearcher {
 
   // TODO: returns first best match, but can be any
-  def getValueMatchInValues(value: String, rowValues: List[String], exclude: List[Int]): Option[ValueMatchResult]
+  def getValueMatchInValues(value: String, rowValues: List[String], exclude: List[Int], threshold: Double = 0.8): Option[ValueMatchResult]
 
 }
 
@@ -25,16 +25,16 @@ class ValueSearcherWithSimilarity(termFrequencyProvider: TermFrequencyProvider, 
 
   private val analyzedValuesCache = mutable.Map[String, String]()
 
-  override def getValueMatchInValues(value: String, rowValues: List[String], exclude: List[Int]): Option[ValueMatchResult] = {
+  override def getValueMatchInValues(value: String, rowValues: List[String], exclude: List[Int], threshold: Double = 0.8): Option[ValueMatchResult] = {
 
     val matchSim =
       rowValues
         .par
         .zipWithIndex
-        .map { case (tableRow, idx) =>
+        .map { case (cellValue, idx) =>
 
           if (!exclude.contains(idx)) {
-            similarity.sim(analyzeQueryValue(value), analyze(tableRow)) match {
+            similarity.sim(analyzeQueryValue(value), analyze(cellValue)) match {
               case sim => (idx, sim)
             }
           } else {
@@ -45,7 +45,7 @@ class ValueSearcherWithSimilarity(termFrequencyProvider: TermFrequencyProvider, 
         .maxBy{ case (_, sim) => sim }
 
     matchSim match {
-      case (idx, sim) if sim > 0 => Some(ValueMatchResult(idx, sim))
+      case (idx, sim) if sim > threshold => Some(ValueMatchResult(idx, sim))
       case _ => None
     }
 

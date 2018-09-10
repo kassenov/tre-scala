@@ -19,19 +19,19 @@ class TableMatchingExtractor(keySearch: KeySearcher, valueSearch: ValueSearcher)
               .flatMap { keyMatch =>
 
                 val cellMatches =
-                  getRowCellMatches(queryTable, queryRowIdx, keyMatch.idx, candidateTable)
+                  getRowCellMatches(queryTable, queryRowIdx, keyMatch.candidateColumnIdx, candidateTable)
                     .flatMap { case (queryClmIdx, valueMatches) =>
                       if (valueMatches.isEmpty) {
                         None
                       } else {
-                        Some(CellMatching(valueMatches))
+                        Some(CellMatch(queryClmIdx, valueMatches))
                       }
                     }
 
                 if (cellMatches.isEmpty) {
                   None
                 } else {
-                  Some(RowMatch(keyMatch.idx, cellMatches))
+                  Some(RowMatch(keyMatch.candidateColumnIdx, cellMatches))
                 }
 
               }
@@ -77,7 +77,7 @@ class TableMatchingExtractor(keySearch: KeySearcher, valueSearch: ValueSearcher)
       .zipWithIndex
       .map { case (queryRow, queryClmIdx) =>
 
-        if (queryClmIdx == 0) {
+        if (queryClmIdx == 0) { // TODO Assumption: first column is key (it might be complex?)
 
           (queryClmIdx, List.empty)
 

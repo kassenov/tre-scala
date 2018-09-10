@@ -17,12 +17,11 @@ class TableMatchingMatrixExtractor() {
               .rowMatches
               .head // TODO Only first match
               .cellMatches
-              .zipWithIndex
-              .map { case (cellMatch, queryClmIdx) =>
+              .map { cellMatch =>
 
                 val idxes =
                   cellMatch.valueMatches
-                    .map (valueMatch => valueMatch.idx)
+                    .map (valueMatch => valueMatch.candidateColumnIdx)
 
                 MatchingMatrixCell(idxes)
 

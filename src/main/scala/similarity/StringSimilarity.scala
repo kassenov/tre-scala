@@ -26,29 +26,39 @@ class ByWordLevenshteinSimilarity(tfWeighter: TermFrequencyScorer,
 
   }
 
-  def isAlpha(name: String): Boolean = name.matches("[a-zA-Z]+")
+  def isAlphaNumeric(name: String): Boolean = name.matches("[\\d\\w]+")
 
   private def getSim(query: String, in: String, threshold: Double = 0.8): Double = {
 
     val queryWords = query.split(" ").toList
     val inWords = in.split(" ").toList
 
-    val scores =
+    val bestMatchScoresWithInWordPerQueryWord =
       queryWords.par
-        .filter(word => isAlpha(word))
-        .zipWithIndex.flatMap { case (queryWord, queryWordIdx) =>
+        .filter(word => isAlphaNumeric(word)) //FIXME do we need alphanumeric only?
+        .flatMap { queryWord =>
 
-          inWords.par
-            .filter(word => isAlpha(word))
-            .zipWithIndex
-            .map { case (inWord, inWordIdx) =>
+          val matchScoreWithInWords = inWords.par
+            .filter(word => isAlphaNumeric(word))
+            .map { inWord =>
               getMatchScore(queryWord, inWord)
             }
-            .find { matchScore => matchScore > threshold }
+
+          if (matchScoreWithInWords.isEmpty) {
+            None
+          } else {
+            Some(matchScoreWithInWords.max)
+          }
 
         }.toList
 
-    scores.sum / math.max(queryWords.length, inWords.length)
+    val sim = bestMatchScoresWithInWordPerQueryWord.sum / math.max(queryWords.length, inWords.length)
+
+    if (sim >= threshold) {
+      sim
+    } else {
+      0.0
+    }
 
   }
 
