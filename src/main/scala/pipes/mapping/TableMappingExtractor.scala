@@ -33,7 +33,7 @@ class TableMappingExtractor() {
     val aggregatedByColumns = MappingScore(score = columnsScore.flatten.map(clm => clm.score).sum)
 
     ColumnsMapping(
-      columns = columns,
+      columnIdxes = columns,
       TableMappingScore(
         columns = columnsScore,
         aggregatedByColumns = aggregatedByColumns,

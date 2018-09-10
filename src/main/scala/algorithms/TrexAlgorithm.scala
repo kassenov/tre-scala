@@ -38,6 +38,8 @@ class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer) extends Algori
 
     val queryKeys = Table.getKeys(queryTable)
 
+    // Mapping candidate tables
+
     val candidateTableToMappingResult =
       tableSearcher
         .getRawJsonTablesByKeys(queryKeys)
@@ -54,6 +56,8 @@ class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer) extends Algori
         }
         .filter { case (_, mappingResult) => candidateKeysFilter.apply(mappingResult.candidateKeysWithIndexes) }
       .toMap
+
+
 
     // Candidate keys
 
@@ -81,7 +85,7 @@ class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer) extends Algori
     // table to query keys
     val candidateTableToQueryKeys =
       candidateTableToMappingResult.map { case (candidateTable, mappingResult) =>
-          candidateTable -> mappingResult.tableMatching.keyMatches.map(keyMatch => queryKeys(keyMatch.queryRowIdx))
+          candidateTable -> mappingResult.tableMatch.keyMatches.map(keyMatch => queryKeys(keyMatch.queryRowIdx))
       }
 
     // query key to table
