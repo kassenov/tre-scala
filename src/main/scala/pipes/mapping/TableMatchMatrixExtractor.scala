@@ -3,16 +3,16 @@ package pipes.mapping
 import models.matching.TableMatch
 import models.matching.matrix._
 
-class TableMatchingMatrixExtractor() {
+class TableMatchMatrixExtractor() {
 
   def extract(tableMatch: TableMatch): MatchMatrix = {
 
-    val matchingMatrixColumns =
+    val matchMatrixColumns =
       tableMatch
         .keyMatches
         .map { keyMatch =>
 
-          val matchingMatrixCells =
+          val matchMatrixCells =
             keyMatch
               .rowMatches
               .head // TODO Only first match
@@ -27,11 +27,11 @@ class TableMatchingMatrixExtractor() {
 
               }
 
-          MatchingMatrixColumn(matchingMatrixCells)
+          MatchingMatrixColumn(matchMatrixCells)
 
         }
 
-    MatchMatrix(matchingMatrixColumns)
+    MatchMatrix(matchMatrixColumns)
 
   }
 

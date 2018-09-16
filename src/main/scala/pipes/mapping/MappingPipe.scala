@@ -6,7 +6,7 @@ import search.{KeySearcher, ValueSearcher}
 class MappingPipe(keySearcher: KeySearcher, valueSearcher: ValueSearcher) {
 
   val tableMatchingExtractor = new TableMatchingExtractor(keySearcher, valueSearcher)
-  val tableMatchingMatrixExtractor = new TableMatchingMatrixExtractor()
+  val tableMatchingMatrixExtractor = new TableMatchMatrixExtractor()
   val tableMappingExtractor = new TableMappingExtractor()
   val tableCandidateKeysWithIndexesExtractor = new TableCandidateKeysWithIndexesExtractor()
 
