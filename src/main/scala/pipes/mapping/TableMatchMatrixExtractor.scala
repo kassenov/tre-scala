@@ -2,10 +2,18 @@ package pipes.mapping
 
 import models.matching.TableMatch
 import models.matching.matrix._
+import models.relation.TableColumnsRelation
 
 class TableMatchMatrixExtractor() {
 
-  def extract(tableMatch: TableMatch): MatchMatrix = {
+  /**
+    * Extracts table match matrix from table match
+    *
+    * @param tableMatch table keys and values matches
+    * @param tableColumnsRelations relation between columns
+    * @return
+    */
+  def extract(tableMatch: TableMatch, tableColumnsRelations: List[TableColumnsRelation]): MatchMatrix = {
 
     val matchMatrixColumns =
       tableMatch

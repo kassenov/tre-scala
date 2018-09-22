@@ -6,7 +6,7 @@ import search.{KeySearcher, ValueSearcher}
 class MappingPipe(keySearcher: KeySearcher, valueSearcher: ValueSearcher) {
 
   val tableMatchingExtractor = new TableMatchingExtractor(keySearcher, valueSearcher)
-  val tableMatchingMatrixExtractor = new TableMatchMatrixExtractor()
+  val tableMatchMatrixExtractor = new TableMatchMatrixExtractor()
   val tableMappingExtractor = new TableMappingExtractor()
   val tableCandidateKeysWithIndexesExtractor = new TableCandidateKeysWithIndexesExtractor()
 
@@ -16,8 +16,8 @@ class MappingPipe(keySearcher: KeySearcher, valueSearcher: ValueSearcher) {
     if (tableMatch.keyMatches.isEmpty) {
       None
     } else {
-      val matchingMatrix = tableMatchingMatrixExtractor.extract(tableMatch)
-      val columnsMapping = tableMappingExtractor.extract(matchingMatrix, tableMatch)
+      val matchMatrix = tableMatchMatrixExtractor.extract(tableMatch)
+      val columnsMapping = tableMappingExtractor.extract(matchMatrix, tableMatch)
       val candidateKeysWithIndexes = tableCandidateKeysWithIndexesExtractor.extract(candidateTable, tableMatch)
 
       Some(MappingPipeResult(columnsMapping, candidateKeysWithIndexes, tableMatch))

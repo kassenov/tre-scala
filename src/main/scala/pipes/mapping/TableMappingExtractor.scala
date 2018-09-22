@@ -3,11 +3,12 @@ package pipes.mapping
 import models.mapping.ColumnsMapping
 import models.matching.TableMatch
 import models.matching.matrix.MatchMatrix
+import models.relation.TableColumnsRelation
 import models.score.{MappingScore, TableMappingScore}
 
 class TableMappingExtractor() {
 
-  def extract(matchMatrix: MatchMatrix, tableMatch: TableMatch): ColumnsMapping = {
+  def extract(matchMatrix: MatchMatrix, tableMatch: TableMatch, tableColumnsRelations: List[TableColumnsRelation]): ColumnsMapping = {
 
     // TODO maybe don't need the check - always non empty list as matrix?
     val queryKeysCount = matchMatrix.columns.find(c => c.cells.nonEmpty).get.cells.size
