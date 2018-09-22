@@ -17,15 +17,17 @@ class TableMatchMatrixExtractor() {
 
     val matchMatrixColumns =
       tableMatch
-        .keyMatches
+        .keyMatches // <- for every query key
         .map { keyMatch =>
 
           val matchMatrixCells =
             keyMatch
-              .rowMatches
+              .rowMatches // <- candidate table rows with matches
               .head // TODO Only first match
               .cellMatches
               .map { cellMatch =>
+
+                //cellMatch.queryColumnIdx
 
                 val idxes =
                   cellMatch.valueMatches

@@ -75,7 +75,7 @@ class TableMatchingExtractor(keySearch: KeySearcher, valueSearch: ValueSearcher)
 
     getQueryRow(queryTable, queryRowIdx)
       .zipWithIndex
-      .map { case (queryRow, queryClmIdx) =>
+      .map { case (queryCellValue, queryClmIdx) =>
 
         if (queryClmIdx == 0) { // TODO Assumption: first column is key (it might be complex?)
 
@@ -83,7 +83,7 @@ class TableMatchingExtractor(keySearch: KeySearcher, valueSearch: ValueSearcher)
 
         } else {
 
-          (valueSearch.getValueMatchInValues(queryRow, tableRow, exclude = List(candidateTable.keyIdx.getOrElse(0))) match {
+          (valueSearch.getValueMatchInValues(queryCellValue, tableRow, exclude = List(candidateTable.keyIdx.getOrElse(0))) match {
             case None             => List.empty
             case Some(valueMatch) => List(valueMatch)
           }) match {
