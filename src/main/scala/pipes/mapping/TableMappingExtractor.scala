@@ -3,7 +3,6 @@ package pipes.mapping
 import models.mapping.ColumnsMapping
 import models.matching.TableMatch
 import models.matching.matrix.MatchMatrix
-import models.relation.TableColumnsRelation
 import models.score.{MappingScore, TableMappingScore}
 
 class TableMappingExtractor() {

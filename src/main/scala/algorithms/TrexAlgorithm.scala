@@ -12,6 +12,8 @@ import statistics.LuceneIndexTermFrequencyProvider
 import thresholding.otsu
 import transformers.Transformer
 
+import scala.collection.mutable
+
 class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer) extends Algorithm {
 
   private val transformer = new Transformer
@@ -38,6 +40,7 @@ class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer) extends Algori
   override def run(queryTable: Table, tableSearcher: TableSearcher, tableColumnsRelations: List[TableColumnsRelation]): List[List[String]] = {
 
     val queryKeys = Table.getKeys(queryTable)
+    val queryColumnsCount = queryTable.columns.length
 
     // Mapping candidate tables
 
@@ -57,8 +60,6 @@ class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer) extends Algori
         }
         .filter { case (_, mappingResult) => candidateKeysFilter.apply(mappingResult.candidateKeysWithIndexes) }
       .toMap
-
-
 
     // Candidate keys
 
@@ -138,6 +139,36 @@ class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer) extends Algori
       .map { case (key, _) => key }
       .toList
 
+    // Value
+
+    val records =
+      topCandidateKeys.par.map { candidateKey =>
+
+        val tables = candidateKeyToCandidateTables(candidateKey)
+        val values = List.range(1, queryColumnsCount).map { queryClmIdx =>
+          val candValueToScoreMap = mutable.Map[String, Double]()
+
+          tables.foreach { table =>
+            val mappingResult = candidateTableToMappingResult(table)
+            val rowIdx = mappingResult.candidateKeysWithIndexes.find(c => c.value == candidateKey).get.idx
+            mappingResult.columnsMapping.columnIdxes(queryClmIdx) match {
+              case Some(candClmIdx) =>
+                val value = table.columns(candClmIdx)(rowIdx)
+                val score = mappingResult.columnsMapping.score.columns(queryClmIdx).get.score
+                if (!candValueToScoreMap.contains(value)) {
+                  candValueToScoreMap(value) = score
+                } else {
+                  candValueToScoreMap(value) = candValueToScoreMap(value) + score
+                }
+              case None       => //
+            }
+          }
+
+          candValueToScoreMap.maxBy{ case (_, score) => score }._1
+        }
+
+        List(candidateKey) :: values
+      }
 
 //    val sortedCandidateKeyToQueryTableSim = candidateKeyToQueryTableSim.toList.sortBy{ case (key, score) => score }
 
