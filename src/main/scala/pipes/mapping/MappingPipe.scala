@@ -1,9 +1,10 @@
 package pipes.mapping
 
+import models.relation.TableColumnsRelation
 import models.{MappingPipeResult, Table}
 import search.{KeySearcher, ValueSearcher}
 
-class MappingPipe(keySearcher: KeySearcher, valueSearcher: ValueSearcher) {
+class MappingPipe(keySearcher: KeySearcher, valueSearcher: ValueSearcher, tableColumnsRelations: List[TableColumnsRelation]) {
 
   val tableMatchingExtractor = new TableMatchingExtractor(keySearcher, valueSearcher)
   val tableMatchMatrixExtractor = new TableMatchMatrixExtractor()
@@ -16,7 +17,7 @@ class MappingPipe(keySearcher: KeySearcher, valueSearcher: ValueSearcher) {
     if (tableMatch.keyMatches.isEmpty) {
       None
     } else {
-      val matchMatrix = tableMatchMatrixExtractor.extract(tableMatch)
+      val matchMatrix = tableMatchMatrixExtractor.extract(queryTable, tableMatch, tableColumnsRelations)
       val columnsMapping = tableMappingExtractor.extract(matchMatrix, tableMatch)
       val candidateKeysWithIndexes = tableCandidateKeysWithIndexesExtractor.extract(candidateTable, tableMatch)
 
