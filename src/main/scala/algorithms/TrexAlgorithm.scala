@@ -2,6 +2,7 @@ package algorithms
 
 import models.Table
 import models.index.IndexFields
+import models.relation.TableColumnsRelation
 import org.apache.lucene.analysis.Analyzer
 import org.apache.lucene.index.IndexReader
 import pipes.filtering._
@@ -34,7 +35,7 @@ class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer) extends Algori
   val sizeFilter = new FilterTableBySize(minRows = 5, minCols = 3)
   val candidateKeysFilter = new FilterTableByCandidateKeys()
 
-  override def run(queryTable: Table, tableSearcher: TableSearcher): List[List[String]] = {
+  override def run(queryTable: Table, tableSearcher: TableSearcher, tableColumnsRelations: List[TableColumnsRelation]): List[List[String]] = {
 
     val queryKeys = Table.getKeys(queryTable)
 
@@ -47,7 +48,7 @@ class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer) extends Algori
         .map { jsonTable => transformer.rawJsonToTable(jsonTable) }
         .filter { candidateTable => sizeFilter.apply(candidateTable) }
         .flatMap { candidateTable =>
-          val mappingResult = mappingPipe.process(queryTable, candidateTable)
+          val mappingResult = mappingPipe.process(queryTable, candidateTable, tableColumnsRelations)
           if (mappingResult.isDefined) {
             Some(candidateTable -> mappingResult.get)
           } else {

@@ -4,14 +4,14 @@ import models.relation.TableColumnsRelation
 import models.{MappingPipeResult, Table}
 import search.{KeySearcher, ValueSearcher}
 
-class MappingPipe(keySearcher: KeySearcher, valueSearcher: ValueSearcher, tableColumnsRelations: List[TableColumnsRelation]) {
+class MappingPipe(keySearcher: KeySearcher, valueSearcher: ValueSearcher) {
 
   val tableMatchingExtractor = new TableMatchingExtractor(keySearcher, valueSearcher)
   val tableMatchMatrixExtractor = new TableMatchMatrixExtractor()
   val tableMappingExtractor = new TableMappingExtractor()
   val tableCandidateKeysWithIndexesExtractor = new TableCandidateKeysWithIndexesExtractor()
 
-  def process(queryTable: Table, candidateTable: Table): Option[MappingPipeResult] = {
+  def process(queryTable: Table, candidateTable: Table, tableColumnsRelations: List[TableColumnsRelation]): Option[MappingPipeResult] = {
 
     val tableMatch = tableMatchingExtractor.extract(queryTable, candidateTable)
     if (tableMatch.keyMatches.isEmpty) {

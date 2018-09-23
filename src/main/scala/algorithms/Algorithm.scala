@@ -1,10 +1,11 @@
 package algorithms
 
 import models.Table
+import models.relation.TableColumnsRelation
 import search.TableSearcher
 
 trait Algorithm {
 
-  def run(queryTable: Table, tableSearcher: TableSearcher): List[List[String]]
+  def run(queryTable: Table, tableSearcher: TableSearcher, tableColumnsRelations: List[TableColumnsRelation]): List[List[String]]
 
 }

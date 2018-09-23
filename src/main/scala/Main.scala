@@ -3,6 +3,7 @@ import java.util.concurrent.TimeUnit
 
 import algorithms.TrexAlgorithm
 import models.Table
+import models.relation.TableColumnsRelation
 import org.apache.lucene.analysis.en.EnglishAnalyzer
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.store.SimpleFSDirectory
@@ -31,7 +32,8 @@ object Main extends App {
 
   val queryTableColumns = List(List("Russia", "Kazakhstan"), List("Moscow", "Astana"))
   val queryTable = new Table("Query", "None", keyIdx = Some(0), hdrIdx = None, columns = queryTableColumns)
-  val result = algorithm.run(queryTable, tableSearch)
+  val tableColumnsRelations = List(TableColumnsRelation(List(0, 1)))
+  val result = algorithm.run(queryTable, tableSearch, tableColumnsRelations)
 
   val endTime = System.nanoTime
   val duration = TimeUnit.NANOSECONDS.toSeconds(endTime - startTime)

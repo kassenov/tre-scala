@@ -32,10 +32,10 @@ class TableMatchMatrixExtractor() {
         .cellsMatches
 
       tableColumnsRelations.foreach { relation =>
-        val relatedMatchCellsOfRow = relation.linkedColumnIdxes.map { queryClmIdx =>
+        val relatedMatchCellsOfRow = relation.linkedColumnIdxes.filter(i => i > 0).map { queryClmIdx =>
 
           val candidateColumnIdxes =
-            rowCellsMatches(queryClmIdx).valueMatches.map(valueMatch => valueMatch.candidateColumnIdx)
+            rowCellsMatches(queryClmIdx-1).valueMatches.map(valueMatch => valueMatch.candidateColumnIdx)
 
           (queryClmIdx, candidateColumnIdxes)
 
