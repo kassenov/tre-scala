@@ -1,3 +1,3 @@
 package models.matching
 
-case class RowMatch(candidateRowId: Int, cellsMatches: List[CellMatch])
+case class RowMatch(candidateRowId: Int, queryClmIdxCellMatchMap: Map[Int, CellMatch])

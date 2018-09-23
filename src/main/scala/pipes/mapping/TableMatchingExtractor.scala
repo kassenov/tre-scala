@@ -18,20 +18,20 @@ class TableMatchingExtractor(keySearch: KeySearcher, valueSearch: ValueSearcher)
             tableKeyMatches
               .flatMap { keyMatch =>
 
-                val cellMatches =
+                val queryClmnIdxToCellMatchMap =
                   getRowCellMatches(queryTable, queryRowIdx, keyMatch.candidateColumnIdx, candidateTable)
                     .flatMap { case (queryClmIdx, valueMatches) =>
                       if (valueMatches.isEmpty) {
                         None
                       } else {
-                        Some(CellMatch(queryClmIdx, valueMatches))
+                        Some(queryClmIdx -> CellMatch(queryClmIdx, valueMatches))
                       }
-                    }
+                    }.toMap
 
-                if (cellMatches.isEmpty) {
+                if (queryClmnIdxToCellMatchMap.isEmpty) {
                   None
                 } else {
-                  Some(RowMatch(keyMatch.candidateColumnIdx, cellMatches))
+                  Some(RowMatch(keyMatch.candidateColumnIdx, queryClmnIdxToCellMatchMap))
                 }
 
               }

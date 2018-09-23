@@ -30,9 +30,9 @@ object Main extends App {
   println("Start")
   val startTime = System.nanoTime
 
-  val queryTableColumns = List(List("Russia", "Kazakhstan"), List("Moscow", "Astana"))
+  val queryTableColumns = List(List("Russia", "Kazakhstan"), List("Moscow", "Astana"), List("Russian", "Kazakh"))
   val queryTable = new Table("Query", "None", keyIdx = Some(0), hdrIdx = None, columns = queryTableColumns)
-  val tableColumnsRelations = List(TableColumnsRelation(List(0, 1)))
+  val tableColumnsRelations = List(TableColumnsRelation(List(0, 1)), TableColumnsRelation(List(0, 2)))
   val result = algorithm.run(queryTable, tableSearch, tableColumnsRelations)
 
   val endTime = System.nanoTime

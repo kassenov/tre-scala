@@ -26,16 +26,16 @@ class TableMatchMatrixExtractor() {
       .keyMatches // <- for every query key
       .foreach { keyMatch =>
 
-      val rowCellsMatches = keyMatch
+      val queryClmIdxCellMatchMap = keyMatch
         .rowMatches // <- query rows
         .head // TODO Only first match
-        .cellsMatches
+        .queryClmIdxCellMatchMap
 
       tableColumnsRelations.foreach { relation =>
         val relatedMatchCellsOfRow = relation.linkedColumnIdxes.filter(i => i > 0).map { queryClmIdx =>
 
           val candidateColumnIdxes =
-            rowCellsMatches(queryClmIdx-1).valueMatches.map(valueMatch => valueMatch.candidateColumnIdx)
+            queryClmIdxCellMatchMap(queryClmIdx).valueMatches.map(valueMatch => valueMatch.candidateColumnIdx)
 
           (queryClmIdx, candidateColumnIdxes)
 

@@ -153,7 +153,7 @@ class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer) extends Algori
             val rowIdx = mappingResult.candidateKeysWithIndexes.find(c => c.value == candidateKey).get.idx
             mappingResult.columnsMapping.columnIdxes(queryClmIdx) match {
               case Some(candClmIdx) =>
-                val value = table.columns(candClmIdx)(rowIdx)
+                val value = table.columns(candClmIdx)(rowIdx).toLowerCase
                 val score = mappingResult.columnsMapping.score.columns(queryClmIdx).get.score
                 if (!candValueToScoreMap.contains(value)) {
                   candValueToScoreMap(value) = score
@@ -167,7 +167,7 @@ class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer) extends Algori
           candValueToScoreMap.maxBy{ case (_, score) => score }._1
         }
 
-        List(candidateKey) :: values
+        candidateKey :: values
       }
 
 //    val sortedCandidateKeyToQueryTableSim = candidateKeyToQueryTableSim.toList.sortBy{ case (key, score) => score }
