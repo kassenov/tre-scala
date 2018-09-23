@@ -32,12 +32,16 @@ class TableMatchMatrixExtractor() {
         .queryClmIdxCellMatchMap
 
       tableColumnsRelations.foreach { relation =>
-        val relatedMatchCellsOfRow = relation.linkedColumnIdxes.filter(i => i > 0).map { queryClmIdx =>
+        val relatedMatchCellsOfRow = relation.linkedColumnIdxes.filter(i => i > 0).flatMap { queryClmIdx =>
 
-          val candidateColumnIdxes =
-            queryClmIdxCellMatchMap(queryClmIdx).valueMatches.map(valueMatch => valueMatch.candidateColumnIdx)
+          if (queryClmIdxCellMatchMap.contains(queryClmIdx)) {
+            val candidateColumnIdxes =
+              queryClmIdxCellMatchMap(queryClmIdx).valueMatches.map(valueMatch => valueMatch.candidateColumnIdx)
 
-          (queryClmIdx, candidateColumnIdxes)
+            Some(queryClmIdx, candidateColumnIdxes)
+          } else {
+            None
+          }
 
         }
 
