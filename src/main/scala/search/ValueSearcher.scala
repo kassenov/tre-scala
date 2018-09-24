@@ -13,7 +13,7 @@ import scala.collection.mutable
 trait ValueSearcher {
 
   // TODO: returns first best match, but can be any
-  def getValueMatchInValues(value: String, rowValues: List[String], exclude: List[Int], threshold: Double = 0.8): Option[ValueMatchResult]
+  def getValueMatchInValues(value: String, rowValues: List[Option[String]], exclude: List[Int], threshold: Double = 0.8): Option[ValueMatchResult]
 
 }
 
@@ -25,7 +25,7 @@ class ValueSearcherWithSimilarity(termFrequencyProvider: TermFrequencyProvider, 
 
   private val analyzedValuesCache = mutable.Map[String, String]()
 
-  override def getValueMatchInValues(value: String, rowValues: List[String], exclude: List[Int], threshold: Double = 0.8): Option[ValueMatchResult] = {
+  override def getValueMatchInValues(value: String, rowValues: List[Option[String]], exclude: List[Int], threshold: Double = 0.8): Option[ValueMatchResult] = {
 
     val matchSim =
       rowValues
@@ -33,8 +33,8 @@ class ValueSearcherWithSimilarity(termFrequencyProvider: TermFrequencyProvider, 
         .zipWithIndex
         .map { case (cellValue, idx) =>
 
-          if (!exclude.contains(idx)) {
-            similarity.sim(analyzeQueryValue(value), analyze(cellValue)) match {
+          if (!exclude.contains(idx) && cellValue.isDefined) {
+            similarity.sim(analyzeQueryValue(value), analyze(cellValue.get)) match {
               case sim => (idx, sim)
             }
           } else {

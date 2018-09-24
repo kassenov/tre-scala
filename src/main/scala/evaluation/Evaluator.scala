@@ -12,12 +12,14 @@ class Evaluator(groundTruthTable: Table, keySearch: KeySearcher, valueSearch: Va
     val retrievedTotalRowsCount = evalTable.columns.head.length
     val truthTotalRowsCount = groundTruthTable.columns.head.length
 
+    val evalTableKeys = Table.getKeys(evalTable)
+
     val truthRowIdxToEvalRowIdx =
       Table.getKeys(groundTruthTable).map { truthKey =>
-        val tableKeys = Table.getKeys(evalTable)
+
         val matches =
 //          keySearch.getValueMatchesOfKeyInKeys(truthKey.get, tableKeys.flatten)
-          valueSearch.getValueMatchInValues(truthKey.get, tableKeys.flatten, exclude = List.empty)
+          valueSearch.getValueMatchInValues(truthKey.get, evalTableKeys, exclude = List.empty)
             .flatMap {
               case m if m.sim > 0 => Some(m)
               case _              => None
@@ -43,21 +45,18 @@ class Evaluator(groundTruthTable: Table, keySearch: KeySearcher, valueSearch: Va
         truthRowIdxToEvalRowIdx(truthRowIdx) match {
           case Some(foundRowIdx) =>
 
-            tableClmnColumn(foundRowIdx) match {
-              case Some(foundValue) =>
-                val valueMatch =
-                  valueSearch.getValueMatchInValues(truthValue.get, List(foundValue) , exclude = List.empty) .flatMap {
-                    case m if m.sim > 0 => Some(m)
-                    case _              => None
-                  }
+            val foundValue = tableClmnColumn(foundRowIdx)
 
-                if (valueMatch.isDefined) {
-                  Some(valueMatch.get.candidateColumnIdx) // <- row idx
-                } else {
-                  None
-                }
+            val valueMatch =
+              valueSearch.getValueMatchInValues(truthValue.get, List(foundValue) , exclude = List.empty) .flatMap {
+                case m if m.sim > 0 => Some(m)
+                case _              => None
+              }
 
-              case None => None
+            if (valueMatch.isDefined) {
+              Some(valueMatch.get.candidateColumnIdx) // <- row idx
+            } else {
+              None
             }
 
           case None => None

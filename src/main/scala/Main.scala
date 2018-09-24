@@ -62,8 +62,8 @@ object Main extends App {
 
   // Searchers
 
-  val retrievedTable1 = csvUtils.importTable(name = s"truth_$concept", clmnsCount, hdrRowIdx = None)
-  val queryTable1 = csvUtils.importTable(name = s"truth_$concept", clmnsCount, hdrRowIdx = None)
+  val queryTable1 = csvUtils.importTable(name = s"query_$concept", clmnsCount, hdrRowIdx = None)
+  val retrievedTable1 = csvUtils.importTable(name = s"retrieved_$concept", clmnsCount, hdrRowIdx = None)
 
   private val entitiesTermFrequencyProvider = new LuceneIndexTermFrequencyProvider(reader, IndexFields.entities)
   private val keySearcher = new KeySearcherWithSimilarity(entitiesTermFrequencyProvider, analyzer)

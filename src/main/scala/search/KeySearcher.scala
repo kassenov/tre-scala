@@ -12,7 +12,7 @@ import scala.collection.mutable
 
 trait KeySearcher {
 
-  def getValueMatchesOfKeyInKeys(key: String, tableKeys: List[String]): List[ValueMatchResult]
+  def getValueMatchesOfKeyInKeys(key: String, tableKeys: List[Option[String]]): List[ValueMatchResult]
 
 }
 
@@ -23,15 +23,21 @@ class KeySearcherWithSimilarity(termFrequencyProvider: TermFrequencyProvider, an
 
   private val analyzedKeysCache = mutable.Map[String, String]()
 
-  override def getValueMatchesOfKeyInKeys(key: String, tableKeys: List[String]): List[ValueMatchResult] = {
+  override def getValueMatchesOfKeyInKeys(key: String, tableKeys: List[Option[String]]): List[ValueMatchResult] = {
 
     tableKeys
       .par
       .zipWithIndex
       .map { case (tableKey, idx) =>
-        similarity.sim(analyzeQueryKey(key), analyze(tableKey)) match {
-          case sim => ValueMatchResult(idx, sim)
+
+        if (tableKey.isDefined) {
+          similarity.sim(analyzeQueryKey(key), analyze(tableKey.get)) match {
+            case sim => ValueMatchResult(idx, sim)
+          }
+        } else {
+          ValueMatchResult(idx, 0.0)
         }
+
       }.toList
 
   }
