@@ -6,6 +6,6 @@ import search.TableSearcher
 
 trait Algorithm {
 
-  def run(queryTable: Table, tableSearcher: TableSearcher, tableColumnsRelations: List[TableColumnsRelation]): List[List[String]]
+  def run(queryTable: Table, tableSearcher: TableSearcher, tableColumnsRelations: List[TableColumnsRelation]): Table
 
 }

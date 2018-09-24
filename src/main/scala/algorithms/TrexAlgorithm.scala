@@ -37,7 +37,7 @@ class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer) extends Algori
   val sizeFilter = new FilterTableBySize(minRows = 5, minCols = 3)
   val candidateKeysFilter = new FilterTableByCandidateKeys()
 
-  override def run(queryTable: Table, tableSearcher: TableSearcher, tableColumnsRelations: List[TableColumnsRelation]): List[List[String]] = {
+  override def run(queryTable: Table, tableSearcher: TableSearcher, tableColumnsRelations: List[TableColumnsRelation]): Table = {
 
     val queryKeys = Table.getKeys(queryTable)
     val queryColumnsCount = queryTable.columns.length
@@ -168,14 +168,20 @@ class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer) extends Algori
         }
 
         candidateKey :: values
-      }
+      }.toList
 
-//    val sortedCandidateKeyToQueryTableSim = candidateKeyToQueryTableSim.toList.sortBy{ case (key, score) => score }
+    val columnsCount = queryTable.columns.length
+    val columns = List.range(0, columnsCount).map { clmIdx =>
+      records.map(r => r(clmIdx))
+    }
 
-    // TODO Getting top
-//    val topCandidateKeys = sortedCandidateKeyToQueryTableSim.map { case (key, score) => key }
-
-    List.empty
+    Table(
+      title = "retrieved",
+      url = "no",
+      keyIdx = Some(0),
+      hdrIdx = None,
+      columns = columns
+    )
 
   }
 
