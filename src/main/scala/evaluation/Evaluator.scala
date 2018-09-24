@@ -9,14 +9,15 @@ class Evaluator(groundTruthTable: Table, keySearch: KeySearcher, valueSearch: Va
 
   def evaluate(evalTable: Table): EvaluationResult = {
 
-    val retrievedTotalRowsCount = evalTable.columns.length
-    val truthTotalRowsCount = groundTruthTable.columns.length
+    val retrievedTotalRowsCount = evalTable.columns.head.length
+    val truthTotalRowsCount = groundTruthTable.columns.head.length
 
     val truthRowIdxToEvalRowIdx =
       Table.getKeys(groundTruthTable).map { truthKey =>
         val tableKeys = Table.getKeys(evalTable)
         val matches =
-          keySearch.getValueMatchesOfKeyInKeys(truthKey.get, tableKeys.flatten)
+//          keySearch.getValueMatchesOfKeyInKeys(truthKey.get, tableKeys.flatten)
+          valueSearch.getValueMatchInValues(truthKey.get, tableKeys.flatten, exclude = List.empty)
             .flatMap {
               case m if m.sim > 0 => Some(m)
               case _              => None
@@ -38,16 +39,16 @@ class Evaluator(groundTruthTable: Table, keySearch: KeySearcher, valueSearch: Va
     val scores = List.range(1, clmnsCount).map { clmnIdx =>
       groundTruthTable.columns(clmnIdx).map { truthValue =>
         val tableClmnValues = evalTable.columns(clmnIdx)
-        val matches =
+        val valueMatch =
           valueSearch.getValueMatchInValues(truthValue.get, tableClmnValues.flatten, exclude = List.empty) .flatMap {
             case m if m.sim > 0 => Some(m)
             case _              => None
           }
 
-        if (matches.isEmpty) {
-          None
+        if (valueMatch.isDefined) {
+          Some(valueMatch.get.candidateColumnIdx) // <- row idx
         } else {
-          Some(matches.head.candidateColumnIdx) // <- row idx
+          None
         }
 
       }
@@ -65,9 +66,9 @@ class Evaluator(groundTruthTable: Table, keySearch: KeySearcher, valueSearch: Va
   }
 
   private def calculatePrecision(matchCount: Int, retrievedCount: Int): Double =
-    matchCount / retrievedCount
+    matchCount.toDouble / retrievedCount.toDouble
 
   private def calculateRecall(matchCount: Int, truthCount: Int): Double =
-    matchCount / truthCount
+    matchCount.toDouble / truthCount.toDouble
 
 }
