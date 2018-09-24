@@ -51,16 +51,19 @@ object Main extends App {
   println("Start")
   val startTime = System.nanoTime
 
-  val retrievedTable = algorithm.run(queryTable, tableSearch, tableColumnsRelations)
+//  val retrievedTable = algorithm.run(queryTable, tableSearch, tableColumnsRelations)
 
-  val endTime = System.nanoTime
-  val duration = TimeUnit.NANOSECONDS.toSeconds(endTime - startTime)
-  println(s"Finished indexing for $concept. Total found ${retrievedTable.columns.head.length} in $duration seconds")
-
-  csvUtils.exportTable(queryTable, s"query_$concept")
-  csvUtils.exportTable(retrievedTable, s"retrieved_$concept")
+//  val endTime = System.nanoTime
+//  val duration = TimeUnit.NANOSECONDS.toSeconds(endTime - startTime)
+//  println(s"Finished indexing for $concept. Total found ${retrievedTable.columns.head.length} in $duration seconds")
+//
+//  csvUtils.exportTable(queryTable, s"query_$concept")
+//  csvUtils.exportTable(retrievedTable, s"retrieved_$concept")
 
   // Searchers
+
+  val retrievedTable1 = csvUtils.importTable(name = s"truth_$concept", clmnsCount, hdrRowIdx = None)
+  val queryTable1 = csvUtils.importTable(name = s"truth_$concept", clmnsCount, hdrRowIdx = None)
 
   private val entitiesTermFrequencyProvider = new LuceneIndexTermFrequencyProvider(reader, IndexFields.entities)
   private val keySearcher = new KeySearcherWithSimilarity(entitiesTermFrequencyProvider, analyzer)
@@ -70,8 +73,8 @@ object Main extends App {
 
   val evaluator = new Evaluator(groundTruthTable, keySearcher, valueSearcher)
 
-  val evalColumns = queryTable.columns.zipWithIndex.map { case (clmn, clmnIdx) =>
-    clmn ::: retrievedTable.columns(clmnIdx)
+  val evalColumns = queryTable1.columns.zipWithIndex.map { case (clmn, clmnIdx) =>
+    clmn ::: retrievedTable1.columns(clmnIdx)
   }
   val evalTable = Table(
     title = "eval",
@@ -80,7 +83,7 @@ object Main extends App {
     hdrIdx = None,
     columns = evalColumns
   )
-//  val evalResults = evaluator.evaluate(retrievedTable)
+  val evalResults = evaluator.evaluate(retrievedTable1)
 
   val a = 10
 

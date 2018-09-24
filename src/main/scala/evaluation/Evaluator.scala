@@ -37,26 +37,36 @@ class Evaluator(groundTruthTable: Table, keySearch: KeySearcher, valueSearch: Va
     val keyScore = EvaluationScore(keyPrecision, keyRecall)
 
     val scores = List.range(1, clmnsCount).map { clmnIdx =>
-      groundTruthTable.columns(clmnIdx).map { truthValue =>
-        val tableClmnValues = evalTable.columns(clmnIdx)
-        val valueMatch =
-          valueSearch.getValueMatchInValues(truthValue.get, tableClmnValues.flatten, exclude = List.empty) .flatMap {
-            case m if m.sim > 0 => Some(m)
-            case _              => None
-          }
+      val truthClmnColumn = groundTruthTable.columns(clmnIdx)
+      val tableClmnColumn = evalTable.columns(clmnIdx)
+      truthClmnColumn.zipWithIndex.map { case (truthValue, truthRowIdx) =>
+        truthRowIdxToEvalRowIdx(truthRowIdx) match {
+          case Some(foundRowIdx) =>
 
-        if (valueMatch.isDefined) {
-          Some(valueMatch.get.candidateColumnIdx) // <- row idx
-        } else {
-          None
+            tableClmnColumn(foundRowIdx) match {
+              case Some(foundValue) =>
+                val valueMatch =
+                  valueSearch.getValueMatchInValues(truthValue.get, List(foundValue) , exclude = List.empty) .flatMap {
+                    case m if m.sim > 0 => Some(m)
+                    case _              => None
+                  }
+
+                if (valueMatch.isDefined) {
+                  Some(valueMatch.get.candidateColumnIdx) // <- row idx
+                } else {
+                  None
+                }
+
+              case None => None
+            }
+
+          case None => None
         }
 
       }
 
-      val matchesCount = truthRowIdxToEvalRowIdx.flatten.length
-
-      val precision = calculatePrecision(matchesCount, retrievedTotalRowsCount)
-      val recall = calculateRecall(matchesCount, truthTotalRowsCount)
+      val precision = calculatePrecision(matchKeysCount, retrievedTotalRowsCount)
+      val recall = calculateRecall(matchKeysCount, truthTotalRowsCount)
       EvaluationScore(precision, recall)
 
     }
