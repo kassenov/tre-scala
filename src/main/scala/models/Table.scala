@@ -1,5 +1,7 @@
 package models
 
+import scala.util.Random
+
 case class Table(title: String,
                  url: String,
                  keyIdx: Option[Int],
@@ -29,5 +31,14 @@ object Table {
 
   private def rowIdxInRange(idx: Int, table: Table): Boolean =
     idx > -1 && idx <= table.columns.head.length
+
+  def getRandomColumns(count: Int, table: Table): List[List[String]] = {
+    val idxes = List.range(0, table.columns.length)
+    val randomIdxes = Random.shuffle(idxes).slice(0, count)
+
+    table.columns.map { c =>
+      c.zipWithIndex.collect { case (x, i) if randomIdxes.contains(i) => x }
+    }
+  }
 
 }

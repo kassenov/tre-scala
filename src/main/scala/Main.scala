@@ -25,19 +25,28 @@ object Main extends App {
   val analyzer = new StandardAnalyzer
   val algorithm = new TrexAlgorithm(reader, analyzer)
 
+  //====================================================
+  val csvUtils = new CsvUtils()
+  val groundTruthTable = csvUtils.importTable(name = "truth_countries", clmnsCount = 6, hdrRowIdx = None)
+
+  val queryTableColumns = Table.getRandomColumns(count=10, groundTruthTable)
+  val queryTable = new Table("Query", "None", keyIdx = Some(0), hdrIdx = None, columns = queryTableColumns)
+
+  //====================================================
+
+  val tableColumnsRelations = List(TableColumnsRelation(List(0, 1)), TableColumnsRelation(List(0, 2)))
+
+  //====================================================
+
   println("Start")
   val startTime = System.nanoTime
 
-  val queryTableColumns = List(List("Russia", "Kazakhstan"), List("Moscow", "Astana"), List("Russian", "Kazakh"))
-  val queryTable = new Table("Query", "None", keyIdx = Some(0), hdrIdx = None, columns = queryTableColumns)
-  val tableColumnsRelations = List(TableColumnsRelation(List(0, 1)), TableColumnsRelation(List(0, 2)))
   val retrievedTable = algorithm.run(queryTable, tableSearch, tableColumnsRelations)
 
   val endTime = System.nanoTime
   val duration = TimeUnit.NANOSECONDS.toSeconds(endTime - startTime)
   println(s"Finished indexing for $concept. Total found ${retrievedTable.columns.length} in $duration seconds")
 
-  val csvUtils = new CsvUtils()
   csvUtils.exportTable(retrievedTable, concept)
 
   val a = 10
