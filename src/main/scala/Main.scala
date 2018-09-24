@@ -34,7 +34,13 @@ object Main extends App {
 
   //====================================================
 
-  val tableColumnsRelations = List(TableColumnsRelation(List(0, 1)), TableColumnsRelation(List(0, 2)))
+  val tableColumnsRelations = List(
+    TableColumnsRelation(List(0, 1)),
+    TableColumnsRelation(List(0, 2)),
+    TableColumnsRelation(List(0, 3)),
+    TableColumnsRelation(List(0, 4)),
+    TableColumnsRelation(List(0, 5)),
+  )
 
   //====================================================
 

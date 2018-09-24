@@ -16,7 +16,7 @@ class Evaluator(groundTruthTable: Table, keySearch: KeySearcher, valueSearch: Va
       Table.getKeys(groundTruthTable).map { truthKey =>
         val tableKeys = Table.getKeys(evalTable)
         val matches =
-          keySearch.getValueMatchesOfKeyInKeys(truthKey, tableKeys)
+          keySearch.getValueMatchesOfKeyInKeys(truthKey.get, tableKeys.flatten)
             .flatMap {
               case m if m.sim > 0 => Some(m)
               case _              => None
@@ -39,7 +39,7 @@ class Evaluator(groundTruthTable: Table, keySearch: KeySearcher, valueSearch: Va
       groundTruthTable.columns(clmnIdx).map { truthValue =>
         val tableClmnValues = evalTable.columns(clmnIdx)
         val matches =
-          valueSearch.getValueMatchInValues(truthValue, tableClmnValues, exclude = List.empty) .flatMap {
+          valueSearch.getValueMatchInValues(truthValue.get, tableClmnValues.flatten, exclude = List.empty) .flatMap {
             case m if m.sim > 0 => Some(m)
             case _              => None
           }

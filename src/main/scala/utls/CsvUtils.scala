@@ -21,7 +21,7 @@ class CsvUtils() {
       // header
       val clmnHdrs =
         if (table.hdrIdx.isDefined) {
-          table.columns.map(c => c(table.hdrIdx.get))
+          table.columns.flatMap(c => c(table.hdrIdx.get))
         } else {
           List.range(0, columnsCount).map(i => s"header${i+1}")
         }
@@ -29,7 +29,7 @@ class CsvUtils() {
 
       // records
       List.range(0, rowsCount).foreach { rowIdx =>
-        val recordValues = table.columns.map(c => c(rowIdx))
+        val recordValues = table.columns.flatMap(c => c(rowIdx))
         csvAppender.appendLine(recordValues.toArray: _*)
       }
 
@@ -43,7 +43,7 @@ class CsvUtils() {
 
     val csvParser = csvReader.parse(file, StandardCharsets.UTF_8)
     val records = Iterator.continually(csvParser.nextRow()).takeWhile(_ != null) map { row =>
-      List.range(0, clmnsCount).map(clmnIdx => row.getField(clmnIdx))
+      List.range(0, clmnsCount).map(clmnIdx => Some(row.getField(clmnIdx)))
     }
 
     Table(

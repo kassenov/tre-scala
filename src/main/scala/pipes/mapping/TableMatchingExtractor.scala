@@ -57,7 +57,7 @@ class TableMatchingExtractor(keySearch: KeySearcher, valueSearch: ValueSearcher)
       .map{ case (queryKey, queryRowIdx) =>
 
         val matches =
-          keySearch.getValueMatchesOfKeyInKeys(queryKey, tableKeys)
+          keySearch.getValueMatchesOfKeyInKeys(queryKey.get, tableKeys.flatten)
           .flatMap {
             case m if m.sim > 0 => Some(m)
             case _ => None
@@ -83,7 +83,7 @@ class TableMatchingExtractor(keySearch: KeySearcher, valueSearch: ValueSearcher)
 
         } else {
 
-          (valueSearch.getValueMatchInValues(queryCellValue, tableRow, exclude = List(candidateTable.keyIdx.getOrElse(0))) match {
+          (valueSearch.getValueMatchInValues(queryCellValue, tableRow.flatten, exclude = List(candidateTable.keyIdx.getOrElse(0))) match {
             case None             => List.empty
             case Some(valueMatch) => List(valueMatch)
           }) match {
@@ -104,8 +104,8 @@ class TableMatchingExtractor(keySearch: KeySearcher, valueSearch: ValueSearcher)
       case None =>
 
         val extractedRow = Table.getRowByIndex(queryRowIdx, queryTable)
-        queryTableRowsCache += queryRowIdx -> extractedRow
-        extractedRow
+        queryTableRowsCache += queryRowIdx -> extractedRow.flatten
+        extractedRow.flatten
 
     }
 

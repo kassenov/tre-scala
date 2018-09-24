@@ -18,7 +18,7 @@ class Transformer {
     val tblOrientation = jsonTable("tableOrientation").str
     val relation = jsonTable("relation")
 
-    val buff_cols = relation.arr map(_.arr.map(el => el.str).toList)
+    val buff_cols = relation.arr map(_.arr.map(el => Some(el.str)).toList)
     val columns = if (tblOrientation == "HORIZONTAL") {
       buff_cols.toList
     } else {

@@ -6,11 +6,11 @@ case class Table(title: String,
                  url: String,
                  keyIdx: Option[Int],
                  hdrIdx: Option[Int],
-                 columns: List[List[String]])
+                 columns: List[List[Option[String]]])
 
 object Table {
 
-  def getKeys(table: Table): List[String] = {
+  def getKeys(table: Table): List[Option[String]] = {
 
     val idx = table.keyIdx match {
       case Some(keyIdx) => keyIdx
@@ -21,7 +21,7 @@ object Table {
 
   }
 
-  def getRowByIndex(idx: Int, table: Table): List[String] = {
+  def getRowByIndex(idx: Int, table: Table): List[Option[String]] = {
     if (rowIdxInRange(idx, table)) {
       table.columns.map(column => column(idx))
     } else {
@@ -32,7 +32,7 @@ object Table {
   private def rowIdxInRange(idx: Int, table: Table): Boolean =
     idx > -1 && idx <= table.columns.head.length
 
-  def getRandomColumns(count: Int, table: Table): List[List[String]] = {
+  def getRandomColumns(count: Int, table: Table): List[List[Option[String]]] = {
     val idxes = List.range(0, table.columns.length)
     val randomIdxes = Random.shuffle(idxes).slice(0, count)
 

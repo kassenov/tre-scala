@@ -14,7 +14,7 @@ class TableCandidateKeysWithIndexesExtractor() {
     Table.getKeys(table)
       .zipWithIndex
       .flatMap {
-        case (key, idx) if !excludeIdxes.contains(idx) => Some(KeyWithIndex(key.toLowerCase, idx))
+        case (key, idx) if !excludeIdxes.contains(idx) => Some(KeyWithIndex(key.get.toLowerCase, idx))
         case _ => None
       }
 
