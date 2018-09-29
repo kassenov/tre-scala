@@ -15,22 +15,22 @@ class Evaluator(groundTruthTable: Table, keySearch: KeySearcher, valueSearch: Va
     val evalTableKeys = Table.getKeys(evalTable)
 
     val truthRowIdxToEvalRowIdx =
-      Table.getKeys(groundTruthTable).map { truthKey =>
+      Table.getKeys(groundTruthTable).zipWithIndex.par.map { case (truthKey, truthKeyIdx) =>
 
         val matches =
 //          keySearch.getValueMatchesOfKeyInKeys(truthKey.get, tableKeys.flatten)
-          valueSearch.getValueMatchInValues(truthKey.get, evalTableKeys, exclude = List.empty)
+          valueSearch.getValueMatchInValues(truthKey.get.toLowerCase(), evalTableKeys, exclude = List.empty)
             .flatMap {
               case m if m.sim > 0 => Some(m)
               case _              => None
             }
 
         if (matches.isEmpty) {
-          None
+          truthKeyIdx -> None
         } else {
-          Some(matches.head.candidateColumnIdx) // <- row idx
+          truthKeyIdx -> Some(matches.head.candidateColumnIdx) // <- row idx
         }
-      }
+      }.toList.sortBy(m => m._1).map(m => m._2)
 
     val matchKeysCount = truthRowIdxToEvalRowIdx.flatten.length
 
@@ -48,7 +48,7 @@ class Evaluator(groundTruthTable: Table, keySearch: KeySearcher, valueSearch: Va
             val foundValue = tableClmnColumn(foundRowIdx)
 
             val valueMatch =
-              valueSearch.getValueMatchInValues(truthValue.get, List(foundValue) , exclude = List.empty) .flatMap {
+              valueSearch.getValueMatchInValues(truthValue.get.toLowerCase(), List(foundValue) , exclude = List.empty) .flatMap {
                 case m if m.sim > 0 => Some(m)
                 case _              => None
               }

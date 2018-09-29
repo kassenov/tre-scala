@@ -53,14 +53,22 @@ class ValueSearcherWithSimilarity(termFrequencyProvider: TermFrequencyProvider, 
 
   private def analyzeQueryValue(value: String): String = {
     if (analyzedValuesCache.contains(value)) {
-      analyzedValuesCache(value)
+      try {
+        analyzedValuesCache(value)
+      } catch {
+        case _: Throwable => putToCache(value)
+      }
     } else {
-      val resultingString = analyze(value)
-
-      analyzedValuesCache.put(value, resultingString)
-
-      resultingString
+      putToCache(value)
     }
+  }
+
+  private def putToCache(value: String): String = {
+    val resultingString = analyze(value)
+
+    analyzedValuesCache.put(value, resultingString)
+
+    resultingString
   }
 
   private def analyze(value: String): String = {

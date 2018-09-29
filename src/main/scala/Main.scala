@@ -19,6 +19,8 @@ object Main extends App {
   val rootPath = "/media/light/SSD/50"
   val clmnsCount = 2
   val concept = s"countries_$clmnsCount"
+//  val clmnsCount = 3
+//  val concept = s"foobal100_$clmnsCount"
 
   val sourceIndex = new SimpleFSDirectory(new File(rootPath + "/lucene-indexes/full-keys-to-raw-lidx").toPath)
   val reader = DirectoryReader.open(sourceIndex)
@@ -33,7 +35,7 @@ object Main extends App {
   val csvUtils = new CsvUtils()
   val groundTruthTable = csvUtils.importTable(name = s"truth_$concept", clmnsCount, hdrRowIdx = None)
 
-  val queryTableColumns = Table.getColumnsWithRandomRows(count=2, groundTruthTable)
+  val queryTableColumns = Table.getColumnsWithRandomRows(count=4, groundTruthTable, shuffle = false)
   val queryTable = new Table("Query", "None", keyIdx = Some(0), hdrIdx = None, columns = queryTableColumns)
 
   //====================================================
@@ -44,6 +46,7 @@ object Main extends App {
 //    TableColumnsRelation(List(0, 3)),
 //    TableColumnsRelation(List(0, 4)),
 //    TableColumnsRelation(List(0, 5)),
+//    TableColumnsRelation(List(0, 1, 2)),
   )
 
   //====================================================
@@ -52,7 +55,7 @@ object Main extends App {
   val startTime = System.nanoTime
 
 //  val retrievedTable = algorithm.run(queryTable, tableSearch, tableColumnsRelations)
-
+//
 //  val endTime = System.nanoTime
 //  val duration = TimeUnit.NANOSECONDS.toSeconds(endTime - startTime)
 //  println(s"Finished indexing for $concept. Total found ${retrievedTable.columns.head.length} in $duration seconds")
