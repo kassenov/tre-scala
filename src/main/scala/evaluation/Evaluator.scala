@@ -14,10 +14,10 @@ class Evaluator(groundTruthTable: Table, keySearch: KeySearcher, valueSearch: Va
 
     val evalTableKeys = Table.getKeys(evalTable)
 
-    val truthRowIdxToEvalRowIdx =
+    val keyTruthRowIdxToEvalRowIdx =
       Table.getKeys(groundTruthTable).zipWithIndex.par.map { case (truthKey, truthKeyIdx) =>
 
-        val matches =
+        val valueMatch =
 //          keySearch.getValueMatchesOfKeyInKeys(truthKey.get, tableKeys.flatten)
           valueSearch.getValueMatchInValues(truthKey.get.toLowerCase(), evalTableKeys, exclude = List.empty)
             .flatMap {
@@ -25,14 +25,14 @@ class Evaluator(groundTruthTable: Table, keySearch: KeySearcher, valueSearch: Va
               case _              => None
             }
 
-        if (matches.isEmpty) {
+        if (valueMatch.isEmpty) {
           truthKeyIdx -> None
         } else {
-          truthKeyIdx -> Some(matches.head.candidateColumnIdx) // <- row idx
+          truthKeyIdx -> Some(valueMatch.head.candidateColumnIdx) // <- row idx
         }
       }.toList.sortBy(m => m._1).map(m => m._2)
 
-    val matchKeysCount = truthRowIdxToEvalRowIdx.flatten.length
+    val matchKeysCount = keyTruthRowIdxToEvalRowIdx.flatten.length
 
     val keyPrecision = calculatePrecision(matchKeysCount, retrievedTotalRowsCount)
     val keyRecall = calculateRecall(matchKeysCount, truthTotalRowsCount)
@@ -41,8 +41,8 @@ class Evaluator(groundTruthTable: Table, keySearch: KeySearcher, valueSearch: Va
     val scores = List.range(1, clmnsCount).map { clmnIdx =>
       val truthClmnColumn = groundTruthTable.columns(clmnIdx)
       val tableClmnColumn = evalTable.columns(clmnIdx)
-      truthClmnColumn.zipWithIndex.map { case (truthValue, truthRowIdx) =>
-        truthRowIdxToEvalRowIdx(truthRowIdx) match {
+      val valueTruthRowIdxToEvalRowIdx = truthClmnColumn.zipWithIndex.par.map { case (truthValue, truthRowIdx) =>
+        keyTruthRowIdxToEvalRowIdx(truthRowIdx) match {
           case Some(foundRowIdx) =>
 
             val foundValue = tableClmnColumn(foundRowIdx)
@@ -54,18 +54,20 @@ class Evaluator(groundTruthTable: Table, keySearch: KeySearcher, valueSearch: Va
               }
 
             if (valueMatch.isDefined) {
-              Some(valueMatch.get.candidateColumnIdx) // <- row idx
+              truthRowIdx -> Some(valueMatch.get.candidateColumnIdx) // <- row idx
             } else {
-              None
+              truthRowIdx -> None
             }
 
-          case None => None
+          case None => truthRowIdx -> None
         }
 
-      }
+      }.toList.sortBy(m => m._1).map(m => m._2)
 
-      val precision = calculatePrecision(matchKeysCount, retrievedTotalRowsCount)
-      val recall = calculateRecall(matchKeysCount, truthTotalRowsCount)
+      val matchValuesCount = valueTruthRowIdxToEvalRowIdx.flatten.length
+
+      val precision = calculatePrecision(matchValuesCount, retrievedTotalRowsCount)
+      val recall = calculateRecall(matchValuesCount, truthTotalRowsCount)
       EvaluationScore(precision, recall)
 
     }
