@@ -18,9 +18,11 @@ class CsvUtils() {
 
     val csvAppender = csvWriter.append(file, StandardCharsets.UTF_8)
     try {
+      var startFrom = 0
       // header
       val clmnHdrs =
         if (table.hdrIdx.isDefined) {
+          startFrom = table.hdrIdx.get + 1
           table.columns.flatMap(c => c(table.hdrIdx.get))
         } else {
           List.range(0, columnsCount).map(i => s"header${i+1}")
@@ -28,7 +30,7 @@ class CsvUtils() {
       csvAppender.appendLine(clmnHdrs.toArray: _*)
 
       // records
-      List.range(0, rowsCount).foreach { rowIdx =>
+      List.range(startFrom, rowsCount).foreach { rowIdx =>
         val recordValues = table.columns.flatMap(c => c(rowIdx))
         csvAppender.appendLine(recordValues.toArray: _*)
       }
