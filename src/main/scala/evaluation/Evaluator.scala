@@ -21,7 +21,7 @@ class Evaluator(groundTruthTable: Table, keySearch: KeySearcher, valueSearch: Va
 //          keySearch.getValueMatchesOfKeyInKeys(truthKey.get, tableKeys.flatten)
           valueSearch.getValueMatchInValues(truthKey.get.toLowerCase(), evalTableKeys, exclude = List.empty)
             .flatMap {
-              case m if m.sim > 0 => Some(m)
+              case m if m.sim > 0.5 => Some(m)
               case _              => None
             }
 
@@ -32,7 +32,7 @@ class Evaluator(groundTruthTable: Table, keySearch: KeySearcher, valueSearch: Va
         }
       }.toList.sortBy(m => m._1).map(m => m._2)
 
-    val matchKeysCount = keyTruthRowIdxToEvalRowIdx.flatten.length
+    val matchKeysCount = keyTruthRowIdxToEvalRowIdx.flatten.distinct.length
 
     val keyPrecision = calculatePrecision(matchKeysCount, retrievedTotalRowsCount)
     val keyRecall = calculateRecall(matchKeysCount, truthTotalRowsCount)
@@ -50,11 +50,11 @@ class Evaluator(groundTruthTable: Table, keySearch: KeySearcher, valueSearch: Va
             val valueMatch =
               valueSearch.getValueMatchInValues(truthValue.get.toLowerCase(), List(foundValue) , exclude = List.empty) .flatMap {
                 case m if m.sim > 0 => Some(m)
-                case _              => None
+                case _                => None
               }
 
-            if (valueMatch.isDefined) {
-              truthRowIdx -> Some(valueMatch.get.candidateColumnIdx) // <- row idx
+            if (valueMatch.isDefined) { // TODO rethink as keys search
+              truthRowIdx -> Some(foundRowIdx)//Some(valueMatch.get.candidateColumnIdx) // <- row idx
             } else {
               truthRowIdx -> None
             }
@@ -64,10 +64,10 @@ class Evaluator(groundTruthTable: Table, keySearch: KeySearcher, valueSearch: Va
 
       }.toList.sortBy(m => m._1).map(m => m._2)
 
-      val matchValuesCount = valueTruthRowIdxToEvalRowIdx.flatten.length
+      val matchValuesCount = valueTruthRowIdxToEvalRowIdx.flatten.distinct.length
 
-      val precision = calculatePrecision(matchValuesCount, retrievedTotalRowsCount)
-      val recall = calculateRecall(matchValuesCount, truthTotalRowsCount)
+      val precision = calculatePrecision(matchValuesCount, matchKeysCount)//retrievedTotalRowsCount)
+      val recall = calculateRecall(matchValuesCount, matchKeysCount) //truthTotalRowsCount)
       EvaluationScore(precision, recall)
 
     }

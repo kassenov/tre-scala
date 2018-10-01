@@ -14,6 +14,10 @@ trait TableSearcher {
 
   var previouslyFoundDocIds: List[Int] = List.empty
 
+  def getRelevantDocIdsByKeys(keys: List[Option[String]]): List[Int]
+
+  def getRawJsonTablesByDocIds(docIds: List[Int]): ParSeq[String]
+
   def getRawJsonTablesByKeys(keys: List[Option[String]]): ParSeq[String]
 
 }
@@ -24,6 +28,30 @@ class LuceneTableSearcher(indexSearcher: IndexSearcher) extends TableSearcher {
 //
 //  private val reader = DirectoryReader.open(luceneIndexDir)
 //  private val searcher = new IndexSearcher(reader)
+
+  def getRelevantDocIdsByKeys(keys: List[Option[String]]): List[Int] = {
+
+    val query = buildKeysQuery(keys.flatten)
+    val scoutSearchResult = indexSearcher.search(query, 1)
+
+    println(s"Total found ${scoutSearchResult.totalHits.toInt} tables")
+
+    val docs = indexSearcher
+      .search(query, scoutSearchResult.totalHits.toInt)
+      .scoreDocs
+      .filterNot(scoreDoc => previouslyFoundDocIds.contains(scoreDoc.doc))
+      .map(scoreDoc => scoreDoc.doc)
+      .toList
+
+    List(previouslyFoundDocIds, docs).flatten
+
+  }
+
+  def getRawJsonTablesByDocIds(docIds: List[Int]): ParSeq[String] = {
+    docIds
+      .par
+      .map(doc => indexSearcher.doc(doc).get("raw"))
+  }
 
   def getRawJsonTablesByKeys(keys: List[Option[String]]): ParSeq[String] = {
 
