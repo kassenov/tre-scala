@@ -47,11 +47,11 @@ class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer) extends Algori
     println(s"===== Started searching for candidate tables =====")
 
     val groupedDocIds = tableSearcher.getRelevantDocIdsByKeys(queryKeys).grouped(10000).toList
-    val candidateTableToMappingResult = groupedDocIds.flatten { docIds =>
+    val candidateDocIdToMappingResult = groupedDocIds.flatten { docIds =>
 
         tableSearcher.getRawJsonTablesByDocIds(docIds)
           .par
-          .map { jsonTable => transformer.rawJsonToTable(jsonTable) }
+          .map { case (docId, jsonTable) => transformer.rawJsonToTable(docId, jsonTable) }
           .filter { candidateTable => sizeFilter.apply(candidateTable) }
           .flatMap { candidateTable =>
             val mappingResult = mappingPipe.process(queryTable, candidateTable, tableColumnsRelations)
@@ -59,8 +59,8 @@ class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer) extends Algori
               val potentialKeysCount = mappingResult.get.candidateKeysWithIndexes.length
               if (potentialKeysCount > 0) {
 
-                println(s"Found mapping for ${candidateTable.title} with $potentialKeysCount potential keys")
-                Some(candidateTable -> mappingResult.get)
+                println(s"Found mapping for ${candidateTable.docId} ${candidateTable.title} with $potentialKeysCount potential keys")
+                Some(candidateTable.docId -> mappingResult.get)
 
               } else {
                 None
@@ -75,29 +75,29 @@ class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer) extends Algori
 
     }.toMap
 
-    println(s"Total ${candidateTableToMappingResult.toList.length} candidate tables")
+    println(s"Total ${candidateDocIdToMappingResult.toList.length} candidate tables")
     reportDuration(reset = true)
 
     // Candidate keys
     println(s"===== Started extracting candidate keys =====")
     // table to candidate keys
-    val candidateTableToCandidateKeys =
-      candidateTableToMappingResult.map { case (candidateTable, mappingResult) =>
-        candidateTable -> mappingResult.candidateKeysWithIndexes.map(keyWithIndex => keyWithIndex.value)
+    val candidateDocIdToCandidateKeys =
+      candidateDocIdToMappingResult.map { case (candidateDocId, mappingResult) =>
+        candidateDocId -> mappingResult.candidateKeysWithIndexes.map(keyWithIndex => keyWithIndex.value)
       }
 
     // candidate keys
-    val candidateKeys = candidateTableToCandidateKeys.flatten { case (_, keys) => keys }.toList.toSet
+    val candidateKeys = candidateDocIdToCandidateKeys.flatten { case (_, keys) => keys }.toList.toSet
     println(s"Total ${candidateKeys.toList.length} candidate keys")
 
     // candidate key to table
-    val candidateKeyToCandidateTables =
+    val candidateKeyToCandidateDocIds =
       candidateKeys.par.map { key =>
-        val candidateTables = candidateTableToCandidateKeys
+        val candidateDocIds = candidateDocIdToCandidateKeys
           .filter{ case (_, keys) => keys.contains(key) }
           .map{ case (candidateTable, _) => candidateTable }
 
-        key -> candidateTables.toSet
+        key -> candidateDocIds.toSet
       }.toMap
 
     reportDuration(reset = true)
@@ -105,19 +105,19 @@ class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer) extends Algori
     // Query keys
     println(s"===== Started associating query keys =====")
     // table to query keys
-    val candidateTableToQueryKeys =
-      candidateTableToMappingResult.map { case (candidateTable, mappingResult) =>
-          candidateTable -> mappingResult.tableMatch.keyMatches.map(keyMatch => queryKeys(keyMatch.queryRowIdx))
+    val candidateDocIdToQueryKeys =
+      candidateDocIdToMappingResult.map { case (candidateDocId, mappingResult) =>
+          candidateDocId -> mappingResult.tableMatch.keyMatches.map(keyMatch => queryKeys(keyMatch.queryRowIdx))
       }
 
     // query key to table // TODO Log here
-    val queryKeyToCandidateTables =
+    val queryKeyToCandidateDocIds =
       queryKeys.map { key =>
-        val candidateTables = candidateTableToQueryKeys
+        val candidateDocIds = candidateDocIdToQueryKeys
           .filter{ case (_, keys) => keys.contains(key) }
-          .map{ case (candidateTable, _) => candidateTable }
+          .map{ case (candidateDocId, _) => candidateDocId }
 
-        key -> candidateTables.toSet
+        key -> candidateDocIds.toSet
       }.toMap
 
     reportDuration(reset = true)
@@ -127,22 +127,22 @@ class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer) extends Algori
 
     val candidateKeyToQueryTableSim =
       candidateKeys.map { candidateKey =>
-        val candidateKeyTables = candidateKeyToCandidateTables(candidateKey)
+        val candidateKeyTables = candidateKeyToCandidateDocIds(candidateKey)
 
         val score = queryKeys.map { queryKey =>
-          val queryKeyTables = queryKeyToCandidateTables(queryKey)
+          val queryKeyDocIds = queryKeyToCandidateDocIds(queryKey)
 
           // TODO Update scoring for candidate keys
 
-          val unionScore = queryKeyTables.union(candidateKeyTables)
-            .map { candidateTable =>
-              candidateTableToMappingResult(candidateTable).columnsMapping.score
+          val unionScore = queryKeyDocIds.union(candidateKeyTables)
+            .map { candidateDocId =>
+              candidateDocIdToMappingResult(candidateDocId).columnsMapping.score
                 .aggregatedByColumns.score / queryTable.columns.size
             }.sum
 
-          val intersectionScore = queryKeyTables.intersect(candidateKeyTables)
-            .map { candidateTable =>
-              candidateTableToMappingResult(candidateTable).columnsMapping.score
+          val intersectionScore = queryKeyDocIds.intersect(candidateKeyTables)
+            .map { candidateDocId =>
+              candidateDocIdToMappingResult(candidateDocId).columnsMapping.score
                 .aggregatedByColumns.score / queryTable.columns.size
             }.sum
 
@@ -170,13 +170,16 @@ class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer) extends Algori
     val records =
       topCandidateKeys.par.map { candidateKey =>
 
-        val tables = candidateKeyToCandidateTables(candidateKey)
+        val docIds = candidateKeyToCandidateDocIds(candidateKey)
         val values = List.range(1, queryColumnsCount).map { queryClmIdx =>
           val candValueToScoreMap = mutable.Map[String, Double]()
 
-          tables.foreach { table =>
-            val mappingResult = candidateTableToMappingResult(table)
+          docIds.foreach { docId =>
+            val mappingResult = candidateDocIdToMappingResult(docId)
             val rowIdx = mappingResult.candidateKeysWithIndexes.find(c => c.value == candidateKey).get.idx
+
+            val jsonTable = tableSearcher.getRawJsonTableByDocId(docId)
+            val table = transformer.rawJsonToTable(docId, jsonTable)
             mappingResult.columnsMapping.columnIdxes(queryClmIdx) match {
               case Some(candClmIdx) if table.columns(candClmIdx)(rowIdx).isDefined =>
                 val value = table.columns(candClmIdx)(rowIdx).get.toLowerCase
@@ -208,6 +211,7 @@ class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer) extends Algori
     reportDuration(reset = true)
 
     Table(
+      docId = -1,
       title = "retrieved",
       url = "no",
       keyIdx = Some(0),

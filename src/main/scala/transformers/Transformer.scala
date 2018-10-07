@@ -4,7 +4,7 @@ import models.Table
 
 class Transformer {
 
-  def rawJsonToTable(json: String): Table = {
+  def rawJsonToTable(docId: Int, json: String): Table = {
     val jsonTable = ujson.read(json)
 
     val url = jsonTable("url").str
@@ -28,7 +28,7 @@ class Transformer {
     val hdrRowIdx = Option(jsonTable("headerRowIndex").num.toInt).filter(_ => jsonTable("hasHeader").bool)
     val keyClnIdx = Option(jsonTable("keyColumnIndex").num.toInt).filter(_ => jsonTable("hasKeyColumn").bool)
 
-    new Table(title, url, keyClnIdx, hdrRowIdx, columns)
+    new Table(docId, title, url, keyClnIdx, hdrRowIdx, columns)
 
 //    val colsSize = columns.size
 //    val rowsSize = columns.head.size

@@ -2,7 +2,8 @@ package models
 
 import scala.util.Random
 
-case class Table(title: String,
+case class Table(docId: Int,
+                 title: String,
                  url: String,
                  keyIdx: Option[Int],
                  hdrIdx: Option[Int],

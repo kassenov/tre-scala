@@ -8,7 +8,7 @@ import org.apache.lucene.queryparser.classic.QueryParser
 import org.apache.lucene.search.{BooleanClause, BooleanQuery, IndexSearcher}
 import org.apache.lucene.store.SimpleFSDirectory
 
-import scala.collection.parallel.immutable.ParSeq
+import scala.collection.parallel.immutable.{ParMap, ParSeq}
 
 trait TableSearcher {
 
@@ -16,7 +16,9 @@ trait TableSearcher {
 
   def getRelevantDocIdsByKeys(keys: List[Option[String]]): List[Int]
 
-  def getRawJsonTablesByDocIds(docIds: List[Int]): ParSeq[String]
+  def getRawJsonTablesByDocIds(docIds: List[Int]): ParMap[Int, String]
+
+  def getRawJsonTableByDocId(docId: Int): String
 
   def getRawJsonTablesByKeys(keys: List[Option[String]]): ParSeq[String]
 
@@ -47,11 +49,15 @@ class LuceneTableSearcher(indexSearcher: IndexSearcher) extends TableSearcher {
 
   }
 
-  def getRawJsonTablesByDocIds(docIds: List[Int]): ParSeq[String] = {
+  def getRawJsonTablesByDocIds(docIds: List[Int]): ParMap[Int, String] = {
     docIds
       .par
-      .map(doc => indexSearcher.doc(doc).get("raw"))
+      .map(doc => (doc, indexSearcher.doc(doc).get("raw")))
+      .toMap
   }
+
+  def getRawJsonTableByDocId(docId: Int): String =
+    indexSearcher.doc(docId).get("raw")
 
   def getRawJsonTablesByKeys(keys: List[Option[String]]): ParSeq[String] = {
 
