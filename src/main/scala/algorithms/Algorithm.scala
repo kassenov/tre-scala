@@ -1,24 +1,30 @@
 package algorithms
 
 import java.util.concurrent.TimeUnit
-
 import models.Table
+import scala.collection.mutable
+
 
 trait Algorithm {
 
-  var startTime: Long = _
+  var startTimes: mutable.ListBuffer[Long] = _
+  var levels: Int = _
 
-  def init(): Unit = {
-    startTime = System.nanoTime
+  def initTimings(levels: Int): Unit = {
+    startTimes = mutable.ListBuffer.fill(levels)(System.nanoTime)
+    this.levels = levels
   }
 
-  def reportDuration(reset: Boolean): Unit = {
+  def reportWithDuration(level: Int, message: String, reset: Boolean = true): Unit = {
     val currentTime = System.nanoTime
-    val duration = TimeUnit.NANOSECONDS.toSeconds(currentTime - startTime)
-    println(s"in $duration seconds")
+    val duration = TimeUnit.NANOSECONDS.toSeconds(currentTime - startTimes(level))
+
+    val levelIndent = "*" * level
+    println(s"$levelIndent ${Console.RED}Timing:${Console.RESET} $message in ${Console.RED}$duration${Console.RESET} seconds $levelIndent")
 
     if (reset) {
-      startTime = System.nanoTime
+      //resetting all nested timings
+      List.range(level, this.levels).foreach(lvl => startTimes(lvl) = System.nanoTime)
     }
   }
 

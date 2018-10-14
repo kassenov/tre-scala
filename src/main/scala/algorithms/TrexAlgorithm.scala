@@ -45,7 +45,7 @@ class TrexAlgorithm(indexReader: IndexReader,
   val candidateKeysFilter = new FilterTableByCandidateKeys()
 
   override def run(queryTable: Table): Table = {
-    init()
+    super.initTimings(levels = 3)
 
     val queryKeys = Table.getKeys(queryTable)
     val queryColumnsCount = queryTable.columns.length
@@ -55,32 +55,30 @@ class TrexAlgorithm(indexReader: IndexReader,
 
     val candidateDocIdToMappingResult = deserializeOrFindAndMapByQueryKeysAndDataName(queryTable, dataName)
 
-    println(s"Total ${candidateDocIdToMappingResult.toList.length} candidate tables")
-    reportDuration(reset = true)
+    reportWithDuration(level = 1, s"Total ${candidateDocIdToMappingResult.toList.length} candidate tables")
 
     // Candidate keys
     println(s"===== Started extracting candidate keys =====")
-    // table to candidate keys
-    val candidateDocIdToCandidateKeys =
-      candidateDocIdToMappingResult.map { case (candidateDocId, mappingResult) =>
-        candidateDocId -> mappingResult.candidateKeysWithIndexes.map(keyWithIndex => keyWithIndex.value)
+
+    val candidateKeyToCandidateDocIdsHashMap = mutable.HashMap[String, mutable.ListBuffer[Int]]()
+    candidateDocIdToMappingResult.foreach { case (candidateDocId, mappingResult) =>
+      mappingResult.candidateKeysWithIndexes.map{ keyWithIndex =>
+        val key = keyWithIndex.value
+        if (!candidateKeyToCandidateDocIdsHashMap.contains(key)) {
+          candidateKeyToCandidateDocIdsHashMap += key -> mutable.ListBuffer[Int]()
+        }
+        candidateKeyToCandidateDocIdsHashMap(key) += candidateDocId
       }
+    }
+    val candidateKeyToCandidateDocIds = candidateKeyToCandidateDocIdsHashMap.map { case (key, candidateDocIds) =>
+      key -> candidateDocIds.toSet
+    }
 
-    // candidate keys
-    val candidateKeys = candidateDocIdToCandidateKeys.flatten { case (_, keys) => keys }.toList.toSet
-    println(s"Total ${candidateKeys.toList.length} candidate keys")
+    reportWithDuration(level = 2, s"candidateKeyToCandidateDocIds")
 
-    // candidate key to table
-    val candidateKeyToCandidateDocIds =
-      candidateKeys.par.map { key =>
-        val candidateDocIds = candidateDocIdToCandidateKeys
-          .filter{ case (_, keys) => keys.contains(key) }
-          .map{ case (candidateTable, _) => candidateTable }
+    val candidateKeys = candidateKeyToCandidateDocIds.keys
 
-        key -> candidateDocIds.toSet
-      }.toMap
-
-    reportDuration(reset = true)
+    reportWithDuration(level = 1, s"Total ${candidateKeyToCandidateDocIds.toList.length} candidate keys")
 
     // Query keys
     println(s"===== Started associating query keys =====")
@@ -100,7 +98,7 @@ class TrexAlgorithm(indexReader: IndexReader,
         key -> candidateDocIds.toSet
       }.toMap
 
-    reportDuration(reset = true)
+    reportWithDuration(level = 1, s"Total ${queryKeyToCandidateDocIds.toList.length} query keys")
 
     // Top candidate keys
     println(s"===== Started to extract top candidate keys =====")
@@ -142,7 +140,7 @@ class TrexAlgorithm(indexReader: IndexReader,
       .map { case (key, _) => key }
       .toList
 
-    reportDuration(reset = true)
+    reportWithDuration(level = 1, s"Total ${topCandidateKeys.length} top candidate keys")
 
     // Value
     println(s"===== Started selecting values for candidate keys =====")
@@ -188,7 +186,8 @@ class TrexAlgorithm(indexReader: IndexReader,
       records.map(r => r(clmIdx))
     }
 
-    reportDuration(reset = true)
+    reportWithDuration(level = 1, s"Selected values")
+    reportWithDuration(level = 0, s"Finished")
 
     Table(
       docId = -1,
