@@ -14,8 +14,13 @@ import transformers.Transformer
 import utls.Serializer
 
 import scala.collection.mutable
+import scala.collection.parallel.ParMap
 
-class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer, dataName: String) extends Algorithm {
+class TrexAlgorithm(indexReader: IndexReader,
+                    tableSearcher: TableSearcher,
+                    analyzer: Analyzer,
+                    dataName: String,
+                    tableColumnsRelations: List[TableColumnsRelation]) extends Algorithm {
 
   private val transformer = new Transformer
   private val serializer = new Serializer()
@@ -39,7 +44,7 @@ class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer, dataName: Stri
   val sizeFilter = new FilterTableBySize(minRows = 5, minCols = 3)
   val candidateKeysFilter = new FilterTableByCandidateKeys()
 
-  override def run(queryTable: Table, tableSearcher: TableSearcher, tableColumnsRelations: List[TableColumnsRelation]): Table = {
+  override def run(queryTable: Table): Table = {
     init()
 
     val queryKeys = Table.getKeys(queryTable)
@@ -48,43 +53,7 @@ class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer, dataName: Stri
     // Mapping candidate tables
     println(s"===== Started searching for candidate tables =====")
 
-    val candidateDocIdToMappingResult = if (serializer.exists(dataName)) {
-      serializer.deserialize(dataName).asInstanceOf[Map[Int,MappingPipeResult]]
-    } else {
-      val groupedDocIds = tableSearcher.getRelevantDocIdsByKeys(queryKeys).grouped(10000).toList
-
-      val results = groupedDocIds.flatten { docIds =>
-
-        tableSearcher.getRawJsonTablesByDocIds(docIds)
-          .par
-          .map { case (docId, jsonTable) => transformer.rawJsonToTable(docId, jsonTable) }
-          .filter { candidateTable => sizeFilter.apply(candidateTable) }
-          .flatMap { candidateTable =>
-            val mappingResult = mappingPipe.process(queryTable, candidateTable, tableColumnsRelations)
-            if (mappingResult.isDefined) {
-              val potentialKeysCount = mappingResult.get.candidateKeysWithIndexes.length
-              if (potentialKeysCount > 0) {
-
-                println(s"Found mapping for ${candidateTable.docId} ${candidateTable.title} with $potentialKeysCount potential keys")
-                Some(candidateTable.docId -> mappingResult.get)
-
-              } else {
-                None
-              }
-
-            } else {
-              None
-            }
-          }
-          .filter { case (_, mappingResult) => candidateKeysFilter.apply(mappingResult.candidateKeysWithIndexes) }
-          .toMap
-
-      }.toMap
-
-      serializer.serialize(results, dataName)
-
-      results
-    }
+    val candidateDocIdToMappingResult = deserializeOrFindAndMapByQueryKeysAndDataName(queryTable, dataName)
 
     println(s"Total ${candidateDocIdToMappingResult.toList.length} candidate tables")
     reportDuration(reset = true)
@@ -231,6 +200,50 @@ class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer, dataName: Stri
     )
 
   }
+
+  private def deserializeOrFindAndMapByQueryKeysAndDataName(queryTable: Table, dataName: String): Map[Int,MappingPipeResult] =
+    if (serializer.exists(dataName)) {
+      serializer.deserialize(dataName).asInstanceOf[Map[Int,MappingPipeResult]]
+      println(s"De-serialized from file...")
+    } else {
+      val queryKeys = Table.getKeys(queryTable)
+      val groupedDocIds = tableSearcher.getRelevantDocIdsByKeys(queryKeys).grouped(10000).toList
+
+      val results = groupedDocIds.flatten { docIds =>
+
+        mapToQueryByDocIdsAndQueryTable(docIds, queryTable)
+
+      }.toMap
+
+      serializer.serialize(results, dataName)
+
+      results
+    }
+
+  private def mapToQueryByDocIdsAndQueryTable(docIds: List[Int], queryTable: Table): ParMap[Int,MappingPipeResult] =
+    tableSearcher.getRawJsonTablesByDocIds(docIds)
+      .par
+      .map { case (docId, jsonTable) => transformer.rawJsonToTable(docId, jsonTable) }
+      .filter { candidateTable => sizeFilter.apply(candidateTable) }
+      .flatMap { candidateTable =>
+        val mappingResult = mappingPipe.process(queryTable, candidateTable, tableColumnsRelations)
+        if (mappingResult.isDefined) {
+          val potentialKeysCount = mappingResult.get.candidateKeysWithIndexes.length
+          if (potentialKeysCount > 0) {
+
+            println(s"Found mapping for ${candidateTable.docId} ${candidateTable.title} with $potentialKeysCount potential keys")
+            Some(candidateTable.docId -> mappingResult.get)
+
+          } else {
+            None
+          }
+
+        } else {
+          None
+        }
+      }
+      .filter { case (_, mappingResult) => candidateKeysFilter.apply(mappingResult.candidateKeysWithIndexes) }
+      .toMap
 
 
 }

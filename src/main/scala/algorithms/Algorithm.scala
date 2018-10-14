@@ -3,8 +3,6 @@ package algorithms
 import java.util.concurrent.TimeUnit
 
 import models.Table
-import models.relation.TableColumnsRelation
-import search.TableSearcher
 
 trait Algorithm {
 
@@ -24,5 +22,5 @@ trait Algorithm {
     }
   }
 
-  def run(queryTable: Table, tableSearcher: TableSearcher, tableColumnsRelations: List[TableColumnsRelation]): Table
+  def run(queryTable: Table): Table
 }
