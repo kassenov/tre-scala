@@ -60,21 +60,7 @@ class TrexAlgorithm(indexReader: IndexReader,
     // Candidate keys
     println(s"===== Started extracting candidate keys =====")
 
-    val candidateKeyToCandidateDocIdsHashMap = mutable.HashMap[String, mutable.ListBuffer[Int]]()
-    candidateDocIdToMappingResult.foreach { case (candidateDocId, mappingResult) =>
-      mappingResult.candidateKeysWithIndexes.map{ keyWithIndex =>
-        val key = keyWithIndex.value
-        if (!candidateKeyToCandidateDocIdsHashMap.contains(key)) {
-          candidateKeyToCandidateDocIdsHashMap += key -> mutable.ListBuffer[Int]()
-        }
-        candidateKeyToCandidateDocIdsHashMap(key) += candidateDocId
-      }
-    }
-    val candidateKeyToCandidateDocIds = candidateKeyToCandidateDocIdsHashMap.map { case (key, candidateDocIds) =>
-      key -> candidateDocIds.toSet
-    }
-
-    reportWithDuration(level = 2, s"candidateKeyToCandidateDocIds")
+    val candidateKeyToCandidateDocIds = getCandidateKeyToCandidateDocIdsMap(candidateDocIdToMappingResult)
 
     val candidateKeys = candidateKeyToCandidateDocIds.keys
 
@@ -83,20 +69,8 @@ class TrexAlgorithm(indexReader: IndexReader,
     // Query keys
     println(s"===== Started associating query keys =====")
     // table to query keys
-    val candidateDocIdToQueryKeys =
-      candidateDocIdToMappingResult.map { case (candidateDocId, mappingResult) =>
-          candidateDocId -> mappingResult.tableMatch.keyMatches.map(keyMatch => queryKeys(keyMatch.queryRowIdx))
-      }
 
-    // query key to table // TODO Log here
-    val queryKeyToCandidateDocIds =
-      queryKeys.map { key =>
-        val candidateDocIds = candidateDocIdToQueryKeys
-          .filter{ case (_, keys) => keys.contains(key) }
-          .map{ case (candidateDocId, _) => candidateDocId }
-
-        key -> candidateDocIds.toSet
-      }.toMap
+    val queryKeyToCandidateDocIds = getQueryKeyToCandidateDocIds(queryKeys, candidateDocIdToMappingResult)
 
     reportWithDuration(level = 1, s"Total ${queryKeyToCandidateDocIds.toList.length} query keys")
 
@@ -107,7 +81,7 @@ class TrexAlgorithm(indexReader: IndexReader,
       candidateKeys.map { candidateKey =>
         val candidateKeyTables = candidateKeyToCandidateDocIds(candidateKey)
 
-        val score = queryKeys.map { queryKey =>
+        val score = queryKeys.flatten.map { queryKey =>
           val queryKeyDocIds = queryKeyToCandidateDocIds(queryKey)
 
           // TODO Update scoring for candidate keys
@@ -244,5 +218,39 @@ class TrexAlgorithm(indexReader: IndexReader,
       .filter { case (_, mappingResult) => candidateKeysFilter.apply(mappingResult.candidateKeysWithIndexes) }
       .toMap
 
+  private def getCandidateKeyToCandidateDocIdsMap(candidateDocIdToMappingResult: Map[Int,MappingPipeResult]): Map[String, Set[Int]] = {
+    val candidateKeyToCandidateDocIdsHashMap = mutable.HashMap[String, mutable.ListBuffer[Int]]()
+    candidateDocIdToMappingResult.foreach { case (candidateDocId, mappingResult) =>
+      mappingResult.candidateKeysWithIndexes.map{ keyWithIndex =>
+        val key = keyWithIndex.value
+        if (!candidateKeyToCandidateDocIdsHashMap.contains(key)) {
+          candidateKeyToCandidateDocIdsHashMap += key -> mutable.ListBuffer[Int]()
+        }
+        candidateKeyToCandidateDocIdsHashMap(key) += candidateDocId
+      }
+    }
+    candidateKeyToCandidateDocIdsHashMap.map { case (key, candidateDocIds) =>
+      key -> candidateDocIds.toSet
+    }.toMap
+  }
+
+  private def getQueryKeyToCandidateDocIds(queryKeys: List[Option[String]], candidateDocIdToMappingResult: Map[Int,MappingPipeResult]): Map[String, Set[Int]] = {
+    val queryKeyToCandidateDocIdsHashMap = mutable.HashMap[String, mutable.ListBuffer[Int]]()
+    candidateDocIdToMappingResult.foreach { case (candidateDocId, mappingResult) =>
+      mappingResult.tableMatch.keyMatches.map { keyMatch =>
+        queryKeys(keyMatch.queryRowIdx) match {
+          case Some(key) =>
+            if (!queryKeyToCandidateDocIdsHashMap.contains(key)) {
+              queryKeyToCandidateDocIdsHashMap += key -> mutable.ListBuffer[Int]()
+            }
+            queryKeyToCandidateDocIdsHashMap(key) += candidateDocId
+          case None => // Nothing
+        }
+      }
+    }
+    queryKeyToCandidateDocIdsHashMap.map { case (key, candidateDocIds) =>
+      key -> candidateDocIds.toSet
+    }.toMap
+  }
 
 }

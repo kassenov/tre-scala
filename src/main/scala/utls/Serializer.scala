@@ -5,6 +5,9 @@ import java.util.Base64
 import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file.{Files, Paths}
 
+import net.liftweb.json.DefaultFormats
+import net.liftweb.json.Serialization.write
+
 import scala.io.Source
 
 
@@ -33,6 +36,12 @@ class Serializer() {
     val value = ois.readObject
     ois.close
     value
+  }
+
+  def saveAsJson(value: Any, name: String): Unit = {
+    implicit val formats = DefaultFormats
+    val jsonString = write(value)
+    new PrintWriter(s"json/$name.json") { write(jsonString); close }
   }
 
 }
