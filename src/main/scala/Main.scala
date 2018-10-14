@@ -17,10 +17,10 @@ import utls.CsvUtils
 
 object Main extends App {
   val rootPath = "/media/light/SSD/50"
-//  val clmnsCount = 3
-//  val concept = s"countries_$clmnsCount"
   val clmnsCount = 3
-  val concept = s"uefa50_$clmnsCount"
+  val concept = s"countries_$clmnsCount"
+//  val clmnsCount = 3
+//  val concept = s"uefa50_$clmnsCount"
 //  val clmnsCount = 2
 //  val concept = s"foobal100_$clmnsCount"
 //  val clmnsCount = 6
@@ -36,10 +36,10 @@ object Main extends App {
 
   //====================================================
   val csvUtils = new CsvUtils()
-  val groundTruthTable = csvUtils.importTable(name = s"truth_$concept", clmnsCount, hdrRowIdx = None)
+  val groundTruthTable = csvUtils.importTable(name = s"truth_$concept", clmnsCount, hdrRowIdx = Some(0))
 
   val queryTableColumns = Table.getColumnsWithRandomRows(count=4, groundTruthTable, shuffle = false)
-  val queryTable = new Table(docId = 0,"Query", "None", keyIdx = Some(0), hdrIdx = None, columns = queryTableColumns)
+  val queryTable = new Table(docId = 0,"Query", "None", keyIdx = Some(0), hdrIdx = Some(0), columns = queryTableColumns)
 //  val queryTable = csvUtils.importTable(name = s"query_$concept", clmnsCount, hdrRowIdx = Some(0))
 
   //====================================================

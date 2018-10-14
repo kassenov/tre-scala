@@ -54,16 +54,20 @@ class TableMatchingExtractor(keySearch: KeySearcher, valueSearch: ValueSearcher)
 
     Table.getKeys(queryTable)
       .zipWithIndex
-      .map{ case (queryKey, queryRowIdx) =>
+      .flatMap{ case (queryKey, queryRowIdx) =>
 
-        val matches =
-          keySearch.getValueMatchesOfKeyInKeys(queryKey.get, tableKeys)
-          .flatMap {
-            case m if m.sim > 0 => Some(m)
-            case _ => None
-          }
+        if (queryKey.isDefined) {
+          val matches =
+            keySearch.getValueMatchesOfKeyInKeys(queryKey.get, tableKeys)
+              .flatMap {
+                case m if m.sim > 0 => Some(m)
+                case _ => None
+              }
 
-        (queryRowIdx, matches)
+          Some(queryRowIdx, matches)
+        } else {
+          None
+        }
 
       }
 

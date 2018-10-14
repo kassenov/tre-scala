@@ -18,7 +18,12 @@ object Table {
       case None         => 0
     }
 
-    table.columns(idx)
+    val keyColumn = table.columns(idx)
+    if (table.hdrIdx.isDefined) {
+      List.fill(table.hdrIdx.get + 1)(None) ++ keyColumn.slice(table.hdrIdx.get + 1, keyColumn.length)
+    } else {
+      keyColumn
+    }
 
   }
 

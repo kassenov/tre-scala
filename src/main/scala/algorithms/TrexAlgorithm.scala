@@ -229,9 +229,13 @@ class TrexAlgorithm(indexReader: IndexReader,
         candidateKeyToCandidateDocIdsHashMap(key) += candidateDocId
       }
     }
-    candidateKeyToCandidateDocIdsHashMap.map { case (key, candidateDocIds) =>
+    val result = candidateKeyToCandidateDocIdsHashMap.map { case (key, candidateDocIds) =>
       key -> candidateDocIds.toSet
     }.toMap
+
+    serializer.saveAsJson(result, s"${dataName}_CandidateKeyToCandidateDocIds")
+
+    result
   }
 
   private def getQueryKeyToCandidateDocIds(queryKeys: List[Option[String]], candidateDocIdToMappingResult: Map[Int,MappingPipeResult]): Map[String, Set[Int]] = {
@@ -248,9 +252,13 @@ class TrexAlgorithm(indexReader: IndexReader,
         }
       }
     }
-    queryKeyToCandidateDocIdsHashMap.map { case (key, candidateDocIds) =>
+    val result = queryKeyToCandidateDocIdsHashMap.map { case (key, candidateDocIds) =>
       key -> candidateDocIds.toSet
     }.toMap
+
+    serializer.saveAsJson(result, s"${dataName}_QueryKeyToCandidateDocIds")
+
+    result
   }
 
 }
