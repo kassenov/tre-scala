@@ -203,8 +203,8 @@ class TrexAlgorithm(indexReader: IndexReader,
 
   private def deserializeOrFindAndMapByQueryKeysAndDataName(queryTable: Table, dataName: String): Map[Int,MappingPipeResult] =
     if (serializer.exists(dataName)) {
+      println(s"De-serializing from file...")
       serializer.deserialize(dataName).asInstanceOf[Map[Int,MappingPipeResult]]
-      println(s"De-serialized from file...")
     } else {
       val queryKeys = Table.getKeys(queryTable)
       val groupedDocIds = tableSearcher.getRelevantDocIdsByKeys(queryKeys).grouped(10000).toList
