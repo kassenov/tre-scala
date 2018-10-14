@@ -17,10 +17,10 @@ import utls.CsvUtils
 
 object Main extends App {
   val rootPath = "/media/light/SSD/50"
-  val clmnsCount = 3
-  val concept = s"countries_$clmnsCount"
 //  val clmnsCount = 3
-//  val concept = s"uefa50_$clmnsCount"
+//  val concept = s"countries_$clmnsCount"
+  val clmnsCount = 3
+  val concept = s"uefa50_$clmnsCount"
 //  val clmnsCount = 2
 //  val concept = s"foobal100_$clmnsCount"
 //  val clmnsCount = 6
@@ -33,7 +33,7 @@ object Main extends App {
   var tableSearch = new LuceneTableSearcher(searcher)
 
   val analyzer = new StandardAnalyzer
-  val algorithm = new TrexAlgorithm(reader, analyzer)
+  val algorithm = new TrexAlgorithm(reader, analyzer, concept)
 
   //====================================================
   val csvUtils = new CsvUtils()
@@ -46,12 +46,13 @@ object Main extends App {
   //====================================================
 
   val tableColumnsRelations = List(
-    TableColumnsRelation(List(0, 1)),
-    TableColumnsRelation(List(0, 2)),
-    TableColumnsRelation(List(0, 3)),
+//    TableColumnsRelation(List(0, 1)),
+//    TableColumnsRelation(List(0, 2)),
+//    TableColumnsRelation(List(0, 3)),
 //    TableColumnsRelation(List(0, 4)),
 //    TableColumnsRelation(List(0, 5)),
 //    TableColumnsRelation(List(0, 1, 2, 3, 4, 5)),
+      TableColumnsRelation(List(0, 1, 2)),
   )
 
   //====================================================
@@ -92,8 +93,8 @@ object Main extends App {
     hdrIdx = None,
     columns = evalColumns
   )
-  val evalResults = evaluator.evaluate(retrievedTable1)
-  println(s"Evals: $evalResults")
+//  val evalResults = evaluator.evaluate(retrievedTable1)
+//  println(s"Evals: $evalResults")
 
   val a = 10
 

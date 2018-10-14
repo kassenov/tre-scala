@@ -1,6 +1,6 @@
 package algorithms
 
-import models.Table
+import models.{MappingPipeResult, Table}
 import models.index.IndexFields
 import models.relation.TableColumnsRelation
 import org.apache.lucene.analysis.Analyzer
@@ -11,12 +11,14 @@ import search.{KeySearcherWithSimilarity, TableSearcher, ValueSearcherWithSimila
 import statistics.LuceneIndexTermFrequencyProvider
 import thresholding.otsu
 import transformers.Transformer
+import utls.Serializer
 
 import scala.collection.mutable
 
-class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer) extends Algorithm {
+class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer, dataName: String) extends Algorithm {
 
   private val transformer = new Transformer
+  private val serializer = new Serializer()
 
   // Searchers
 
@@ -46,8 +48,12 @@ class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer) extends Algori
     // Mapping candidate tables
     println(s"===== Started searching for candidate tables =====")
 
-    val groupedDocIds = tableSearcher.getRelevantDocIdsByKeys(queryKeys).grouped(10000).toList
-    val candidateDocIdToMappingResult = groupedDocIds.flatten { docIds =>
+    val candidateDocIdToMappingResult = if (serializer.exists(dataName)) {
+      serializer.deserialize(dataName).asInstanceOf[Map[Int,MappingPipeResult]]
+    } else {
+      val groupedDocIds = tableSearcher.getRelevantDocIdsByKeys(queryKeys).grouped(10000).toList
+
+      val results = groupedDocIds.flatten { docIds =>
 
         tableSearcher.getRawJsonTablesByDocIds(docIds)
           .par
@@ -73,7 +79,12 @@ class TrexAlgorithm(indexReader: IndexReader, analyzer: Analyzer) extends Algori
           .filter { case (_, mappingResult) => candidateKeysFilter.apply(mappingResult.candidateKeysWithIndexes) }
           .toMap
 
-    }.toMap
+      }.toMap
+
+      serializer.serialize(results, dataName)
+
+      results
+    }
 
     println(s"Total ${candidateDocIdToMappingResult.toList.length} candidate tables")
     reportDuration(reset = true)

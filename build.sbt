@@ -1,7 +1,7 @@
-scalaVersion := "2.12.4"
+scalaVersion := "2.12.7"
 
-name := "hello-world"
-organization := "ch.epfl.scala"
+name := "tre-scala"
+organization := "ca.uofa.scala"
 version := "1.0"
 
 libraryDependencies += "org.apache.commons" % "commons-compress" % "1.17"
@@ -14,3 +14,5 @@ libraryDependencies += "com.google.code.gson" % "gson" % "2.2.4"
 libraryDependencies += "com.google.guava" % "guava" % "18.0"
 libraryDependencies += "com.lihaoyi" %% "ujson" % "0.6.6"
 libraryDependencies += "de.siegmar" % "fastcsv" % "1.0.2"
+
+fork in run := true

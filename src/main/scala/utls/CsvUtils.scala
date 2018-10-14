@@ -10,7 +10,7 @@ import models.Table
 class CsvUtils() {
 
   def exportTable(table: Table, name: String): Unit = {
-    val file = new File(s"$name.csv")
+    val file = new File(s"outputs/$name.csv")
     val csvWriter = new CsvWriter()
 
     val columnsCount = table.columns.length
@@ -40,7 +40,7 @@ class CsvUtils() {
   }
 
   def importTable(name: String, clmnsCount: Int, hdrRowIdx: Option[Int]): Table = {
-    val file = new File(s"$name.csv")
+    val file = new File(s"outputs/$name.csv")
     val csvReader = new CsvReader()
 
     val csvParser = csvReader.parse(file, StandardCharsets.UTF_8)
@@ -49,6 +49,7 @@ class CsvUtils() {
     }
 
     Table(
+      docId = -1,
       title = name,
       url = "no",
       keyIdx = Some(0),
