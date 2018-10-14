@@ -33,7 +33,6 @@ object Main extends App {
   var tableSearch = new LuceneTableSearcher(searcher)
 
   val analyzer = new StandardAnalyzer
-  val algorithm = new TrexAlgorithm(reader, tableSearch, analyzer, concept)
 
   //====================================================
   val csvUtils = new CsvUtils()
@@ -60,7 +59,8 @@ object Main extends App {
   println("Start")
   val startTime = System.nanoTime
 
-  val retrievedTable = algorithm.run(queryTable, tableColumnsRelations)
+  val algorithm = new TrexAlgorithm(reader, tableSearch, analyzer, concept, tableColumnsRelations)
+  val retrievedTable = algorithm.run(queryTable)
 
   val endTime = System.nanoTime
   val duration = TimeUnit.NANOSECONDS.toSeconds(endTime - startTime)
