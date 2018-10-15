@@ -17,19 +17,23 @@ class Evaluator(groundTruthTable: Table, keySearch: KeySearcher, valueSearch: Va
     val keyTruthRowIdxToEvalRowIdx =
       Table.getKeys(groundTruthTable).zipWithIndex.par.map { case (truthKey, truthKeyIdx) =>
 
-        val valueMatch =
-//          keySearch.getValueMatchesOfKeyInKeys(truthKey.get, tableKeys.flatten)
-          valueSearch.getValueMatchInValues(truthKey.get.toLowerCase(), evalTableKeys, exclude = List.empty)
-            .flatMap {
-              case m if m.sim > 0.5 => Some(m)
-              case _              => None
-            }
-
-        if (valueMatch.isEmpty) {
-          truthKeyIdx -> None
+        if (truthKey.isDefined) {
+          val valueMatch =
+          //          keySearch.getValueMatchesOfKeyInKeys(truthKey.get, tableKeys.flatten)
+            valueSearch.getValueMatchInValues(truthKey.get.toLowerCase(), evalTableKeys, exclude = List.empty)
+              .flatMap {
+                case m if m.sim > 0.5 => Some(m)
+                case _              => None
+              }
+          if (valueMatch.isEmpty) {
+            truthKeyIdx -> None
+          } else {
+            truthKeyIdx -> Some(valueMatch.head.candidateColumnIdx) // <- row idx
+          }
         } else {
-          truthKeyIdx -> Some(valueMatch.head.candidateColumnIdx) // <- row idx
+          truthKeyIdx -> None
         }
+
       }.toList.sortBy(m => m._1).map(m => m._2)
 
     val matchKeysCount = keyTruthRowIdxToEvalRowIdx.flatten.distinct.length

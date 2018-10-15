@@ -16,4 +16,4 @@ libraryDependencies += "com.lihaoyi" %% "ujson" % "0.6.6"
 libraryDependencies += "de.siegmar" % "fastcsv" % "1.0.2"
 libraryDependencies += "net.liftweb" %% "lift-json" % "3.3.0"
 
-//fork in run := true
+fork in run := true

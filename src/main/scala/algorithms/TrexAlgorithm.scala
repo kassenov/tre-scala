@@ -53,110 +53,40 @@ class TrexAlgorithm(indexReader: IndexReader,
     // Mapping candidate tables
     println(s"===== Started searching for candidate tables =====")
 
-    val candidateDocIdToMappingResult = deserializeOrFindAndMapByQueryKeysAndDataName(queryTable, dataName)
+    val docIdToMappingResult = deserializeOrFindAndMapByQueryKeysAndDataName(queryTable, dataName)
 
-    reportWithDuration(level = 1, s"Total ${candidateDocIdToMappingResult.toList.length} candidate tables")
+    reportWithDuration(level = 1, s"Total ${docIdToMappingResult.toList.length} candidate tables")
 
     // Candidate keys
     println(s"===== Started extracting candidate keys =====")
 
-    val candidateKeyToCandidateDocIds = getCandidateKeyToCandidateDocIdsMap(candidateDocIdToMappingResult)
+    val candidateKeyToDocIds = getCandidateKeyToCandidateDocIdsMap(docIdToMappingResult)
 
-    val candidateKeys = candidateKeyToCandidateDocIds.keys
+    val candidateKeys = candidateKeyToDocIds.keys.toList
 
-    reportWithDuration(level = 1, s"Total ${candidateKeyToCandidateDocIds.toList.length} candidate keys")
+    reportWithDuration(level = 1, s"Total ${candidateKeyToDocIds.toList.length} candidate keys")
 
     // Query keys
     println(s"===== Started associating query keys =====")
     // table to query keys
 
-    val queryKeyToCandidateDocIds = getQueryKeyToCandidateDocIds(queryKeys, candidateDocIdToMappingResult)
+    val queryKeyToDocIds = getQueryKeyToCandidateDocIds(queryKeys, docIdToMappingResult)
 
-    reportWithDuration(level = 1, s"Total ${queryKeyToCandidateDocIds.toList.length} query keys")
+    reportWithDuration(level = 1, s"Total ${queryKeyToDocIds.toList.length} query keys")
 
     // Top candidate keys
     println(s"===== Started to extract top candidate keys =====")
 
-    val candidateKeyToQueryTableSim =
-      candidateKeys.map { candidateKey =>
-        val candidateKeyTables = candidateKeyToCandidateDocIds(candidateKey)
-
-        val score = queryKeys.flatten.map { queryKey =>
-          val queryKeyDocIds = queryKeyToCandidateDocIds(queryKey)
-
-          // TODO Update scoring for candidate keys
-
-          val unionScore = queryKeyDocIds.union(candidateKeyTables)
-            .map { candidateDocId =>
-              candidateDocIdToMappingResult(candidateDocId).columnsMapping.score
-                .aggregatedByColumns.score / queryTable.columns.size
-            }.sum
-
-          val intersectionScore = queryKeyDocIds.intersect(candidateKeyTables)
-            .map { candidateDocId =>
-              candidateDocIdToMappingResult(candidateDocId).columnsMapping.score
-                .aggregatedByColumns.score / queryTable.columns.size
-            }.sum
-
-          intersectionScore / unionScore
-
-        }.sum / queryKeys.size
-
-        candidateKey -> score
-
-      }
-
-    val similarities = candidateKeyToQueryTableSim.toMap.map{ case (_, score) => score * 10 }.toList
-    val threshold = otsu.getThreshold(similarities) / 10
-
-    val topCandidateKeys = candidateKeyToQueryTableSim
-      .filter { case (_, score) => score >= threshold }
-      .map { case (key, _) => key }
-      .toList
+    val topCandidateKeys = getTopCandidateKeys(candidateKeys, candidateKeyToDocIds, queryKeys, queryKeyToDocIds, docIdToMappingResult, queryColumnsCount)
 
     reportWithDuration(level = 1, s"Total ${topCandidateKeys.length} top candidate keys")
 
     // Value
     println(s"===== Started selecting values for candidate keys =====")
 
-    val records =
-      topCandidateKeys.par.map { candidateKey =>
+    val records = buildRecords(topCandidateKeys, candidateKeyToDocIds, docIdToMappingResult, queryColumnsCount)
 
-        val docIds = candidateKeyToCandidateDocIds(candidateKey)
-        val values = List.range(1, queryColumnsCount).map { queryClmIdx =>
-          val candValueToScoreMap = mutable.Map[String, Double]()
-
-          docIds.foreach { docId =>
-            val mappingResult = candidateDocIdToMappingResult(docId)
-            val rowIdx = mappingResult.candidateKeysWithIndexes.find(c => c.value == candidateKey).get.idx
-
-            val jsonTable = tableSearcher.getRawJsonTableByDocId(docId)
-            val table = transformer.rawJsonToTable(docId, jsonTable)
-            mappingResult.columnsMapping.columnIdxes(queryClmIdx) match {
-              case Some(candClmIdx) if table.columns(candClmIdx)(rowIdx).isDefined =>
-                val value = table.columns(candClmIdx)(rowIdx).get.toLowerCase
-                val score = mappingResult.columnsMapping.score.columns(queryClmIdx).get.score
-                if (!candValueToScoreMap.contains(value)) {
-                  candValueToScoreMap(value) = score
-                } else {
-                  candValueToScoreMap(value) = candValueToScoreMap(value) + score
-                }
-              case None             => //
-            }
-          }
-
-          if (candValueToScoreMap.isEmpty) {
-            None
-          } else {
-            Some(candValueToScoreMap.maxBy{ case (_, score) => score }._1)
-          }
-        }
-
-        Some(candidateKey) :: values
-      }.toList
-
-    val columnsCount = queryTable.columns.length
-    val columns = List.range(0, columnsCount).map { clmIdx =>
+    val columns = List.range(0, queryColumnsCount).map { clmIdx =>
       records.map(r => r(clmIdx))
     }
 
@@ -260,5 +190,87 @@ class TrexAlgorithm(indexReader: IndexReader,
 
     result
   }
+
+  private def getTopCandidateKeys(candidateKeys: List[String],
+                                  candidateKeyToDocIds: Map[String, Set[Int]],
+                                  queryKeys: List[Option[String]],
+                                  queryKeyToCandidateDocIds: Map[String, Set[Int]],
+                                  docIdToMappingResult: Map[Int,MappingPipeResult],
+                                  clmnsCount: Int): List[String] = {
+    val candidateKeyToQueryTableSim =
+      candidateKeys.map { key =>
+        val keyTables = candidateKeyToDocIds(key)
+
+        val score = queryKeys.flatten.map { queryKey =>
+          val queryKeyDocIds = queryKeyToCandidateDocIds(queryKey)
+
+          // TODO Update scoring for candidate keys
+
+          val unionScore = queryKeyDocIds.union(keyTables)
+            .map { candidateDocId =>
+              docIdToMappingResult(candidateDocId).columnsMapping.score
+                .aggregatedByColumns.score / clmnsCount
+            }.sum
+
+          val intersectionScore = queryKeyDocIds.intersect(keyTables)
+            .map { candidateDocId =>
+              docIdToMappingResult(candidateDocId).columnsMapping.score
+                .aggregatedByColumns.score / clmnsCount
+            }.sum
+
+          intersectionScore / unionScore
+
+        }.sum / queryKeys.size
+
+        key -> score
+
+      }
+
+    val similarities = candidateKeyToQueryTableSim.toMap.map{ case (_, score) => score * 10 }.toList
+    val threshold = otsu.getThreshold(similarities) / 10
+
+    candidateKeyToQueryTableSim
+      .filter { case (_, score) => score >= threshold }
+      .map { case (key, _) => key }
+  }
+
+  private def buildRecords(keys: List[String],
+                           keyToDocIds: Map[String, Set[Int]],
+                           docIdToMappingResult: Map[Int,MappingPipeResult],
+                           clmnsCount: Int): List[List[Option[String]]] =
+    keys.par.map { key =>
+
+      val docIds = keyToDocIds(key)
+      val values = List.range(1, clmnsCount).map { queryClmIdx =>
+        val candValueToScoreMap = mutable.Map[String, Double]()
+
+        docIds.foreach { docId =>
+          val mappingResult = docIdToMappingResult(docId)
+          val rowIdx = mappingResult.candidateKeysWithIndexes.find(c => c.value == key).get.idx
+
+          val jsonTable = tableSearcher.getRawJsonTableByDocId(docId)
+          val table = transformer.rawJsonToTable(docId, jsonTable)
+          mappingResult.columnsMapping.columnIdxes(queryClmIdx) match {
+            case Some(candClmIdx) if table.columns(candClmIdx)(rowIdx).isDefined =>
+              val value = table.columns(candClmIdx)(rowIdx).get.toLowerCase
+              val score = mappingResult.columnsMapping.score.columns(queryClmIdx).get.score
+              if (!candValueToScoreMap.contains(value)) {
+                candValueToScoreMap(value) = score
+              } else {
+                candValueToScoreMap(value) = candValueToScoreMap(value) + score
+              }
+            case None             => //
+          }
+        }
+
+        if (candValueToScoreMap.isEmpty) {
+          None
+        } else {
+          Some(candValueToScoreMap.maxBy{ case (_, score) => score }._1)
+        }
+      }
+
+      Some(key) :: values
+    }.toList
 
 }
