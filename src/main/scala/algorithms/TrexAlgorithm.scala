@@ -198,21 +198,21 @@ class TrexAlgorithm(indexReader: IndexReader,
                                   docIdToMappingResult: Map[Int,MappingPipeResult],
                                   clmnsCount: Int): List[String] = {
     val candidateKeyToQueryTableSim =
-      candidateKeys.map { key =>
-        val keyTables = candidateKeyToDocIds(key)
+      candidateKeys.map { candidateKey =>
+        val candidateKeyDocIds = candidateKeyToDocIds(candidateKey)
 
         val score = queryKeys.flatten.map { queryKey =>
           val queryKeyDocIds = queryKeyToCandidateDocIds(queryKey)
 
-          // TODO Update scoring for candidate keys
+          // FIXME Update scoring for candidate keys (it's relevance only, we need coherence too)
 
-          val unionScore = queryKeyDocIds.union(keyTables)
+          val unionScore = queryKeyDocIds.union(candidateKeyDocIds)
             .map { candidateDocId =>
               docIdToMappingResult(candidateDocId).columnsMapping.score
                 .aggregatedByColumns.score / clmnsCount
             }.sum
 
-          val intersectionScore = queryKeyDocIds.intersect(keyTables)
+          val intersectionScore = queryKeyDocIds.intersect(candidateKeyDocIds)
             .map { candidateDocId =>
               docIdToMappingResult(candidateDocId).columnsMapping.score
                 .aggregatedByColumns.score / clmnsCount
@@ -222,7 +222,7 @@ class TrexAlgorithm(indexReader: IndexReader,
 
         }.sum / queryKeys.size
 
-        key -> score
+        candidateKey -> score
 
       }
 
