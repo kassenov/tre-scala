@@ -3,11 +3,11 @@ package models.selection
 case class KeyColumnsValuesModel(columnsCellValues: List[ColumnCellValues])
 
 case class ColumnCellValues(clmnIdx: Int,
-                            selectedValueIdx: Int,
-                            score: Double,
+                            selectedValue: Option[String],
                             values: List[CellValue])
 
-case class CellValue(key: String,
+case class CellValue(value: String,
                      relevance: Double,
                      coherence: Double,
+                     score: Double, // What does it hold?
                      docIds: Set[Int])
