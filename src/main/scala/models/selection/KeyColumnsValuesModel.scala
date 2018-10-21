@@ -1,6 +1,6 @@
 package models.selection
 
-case class KeyColumnsValuesModel(columnsCellValues: List[ColumnCellValues])
+case class KeyColumnsValuesModel(score: Double, columnsCellValues: List[ColumnCellValues])
 
 case class ColumnCellValues(clmnIdx: Int,
                             selectedValue: Option[String],

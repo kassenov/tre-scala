@@ -1,7 +1,12 @@
 package utls
 
-case class AppConfig(task: TaskFlow.Value, columnsCount: Int, columnsRelations: List[List[Int]], concept: String)
+case class AppConfig(task: TaskFlow.Value,
+                     queryRowsCount: Int,
+                     columnsCount: Int,
+                     columnsRelations: List[List[Int]],
+                     concept: String,
+                     docIds: List[Int])
 
 object TaskFlow extends Enumeration {
-  val Mapping, Evaluating, KeysAnalysis = Value
+  val Mapping, Evaluating, KeysAnalysis, Extracting = Value
 }

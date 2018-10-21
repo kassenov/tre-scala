@@ -12,7 +12,7 @@ import org.apache.lucene.index.DirectoryReader
 import org.apache.lucene.search.IndexSearcher
 import search.{KeySearcherWithSimilarity, LuceneTableSearcher, ValueSearcherWithSimilarity}
 import statistics.LuceneIndexTermFrequencyProvider
-import utls.{CsvUtils, TaskFlow}
+import utls.{CsvUtils, Serializer, TaskFlow}
 import transformers.Transformer
 
 import scala.io.Source
@@ -20,6 +20,7 @@ import scala.io.Source
 
 object Main extends App {
 
+  private val serializer = new Serializer()
   val transformer = new Transformer()
 
   val configsStr = Source.fromFile("config.json").getLines.mkString
@@ -51,7 +52,7 @@ object Main extends App {
   configs.task match {
     case TaskFlow.Mapping =>
 
-      val queryTableColumns = Table.getColumnsWithRandomRows(count=4, groundTruthTable, shuffle = false)
+      val queryTableColumns = Table.getColumnsWithRandomRows(count=configs.queryRowsCount, groundTruthTable, shuffle = false)
       val queryTable = new Table(docId = 0,"Query", "None", keyIdx = Some(0), hdrIdx = Some(0), columns = queryTableColumns)
 
       val tableColumnsRelations = configs.columnsRelations.map(rel => TableColumnsRelation(rel))
@@ -59,20 +60,20 @@ object Main extends App {
       println("Start")
       val startTime = System.nanoTime
 
-      val algorithm = new TrexAlgorithm(reader, tableSearch, analyzer, concept, tableColumnsRelations)
+      val algorithm = new TrexAlgorithm(reader, tableSearch, analyzer, s"$concept${configs.queryRowsCount}", tableColumnsRelations)
       val retrievedTable = algorithm.run(queryTable)
 
       val endTime = System.nanoTime
       val duration = TimeUnit.NANOSECONDS.toSeconds(endTime - startTime)
       println(s"Finished indexing for $concept. Total found ${retrievedTable.columns.head.length} in $duration seconds")
 
-      csvUtils.exportTable(queryTable, s"query_$concept")
-      csvUtils.exportTable(retrievedTable, s"retrieved_$concept")
+      csvUtils.exportTable(queryTable, s"query_$concept${configs.queryRowsCount}")
+      csvUtils.exportTable(retrievedTable, s"retrieved_$concept${configs.queryRowsCount}")
 
     case TaskFlow.Evaluating =>
 
-      val queryTable1 = csvUtils.importTable(name = s"query_$concept", configs.columnsCount, hdrRowIdx = Some(0))
-      val retrievedTable1 = csvUtils.importTable(name = s"retrieved_$concept", configs.columnsCount, hdrRowIdx = Some(0))
+      val queryTable1 = csvUtils.importTable(name = s"query_$concept${configs.queryRowsCount}", configs.columnsCount, hdrRowIdx = Some(0))
+      val retrievedTable1 = csvUtils.importTable(name = s"retrieved_$concept${configs.queryRowsCount}", configs.columnsCount, hdrRowIdx = Some(0))
 
       val entitiesTermFrequencyProvider = new LuceneIndexTermFrequencyProvider(reader, IndexFields.entities)
       val keySearcher = new KeySearcherWithSimilarity(entitiesTermFrequencyProvider, analyzer)
@@ -101,6 +102,14 @@ object Main extends App {
 
       val keysAnalyzer = new KeysAnalysis(concept, reader, analyzer)
       keysAnalyzer.generate(groundTruthTable)
+
+    case TaskFlow.Extracting =>
+
+      tableSearch.getRawJsonTablesByDocIds(configs.docIds).par
+        .map { case (docId, jsonTable) => transformer.rawJsonToTable(docId, jsonTable) }
+        .foreach { candidateTable =>
+          serializer.saveAsJson(candidateTable, candidateTable.docId.toString,"extracted")
+        }
 
   }
 

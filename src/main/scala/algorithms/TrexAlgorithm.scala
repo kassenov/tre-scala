@@ -79,6 +79,7 @@ class TrexAlgorithm(indexReader: IndexReader,
     println(s"===== Started to extract top candidate keys =====")
 
     val topCandidateKeys = getTopCandidateKeys(candidateKeys, candidateKeyToDocIds, queryKeys, queryKeyToDocIds, docIdToMappingResult, queryColumnsCount)
+    val keyToScore = getCandidateKeysToSim(candidateKeys, candidateKeyToDocIds, queryKeys, queryKeyToDocIds, docIdToMappingResult, queryColumnsCount)
 
     reportWithDuration(level = 1, s"Total ${topCandidateKeys.length} top candidate keys")
 
@@ -94,7 +95,7 @@ class TrexAlgorithm(indexReader: IndexReader,
     reportWithDuration(level = 1, s"Selected values")
     reportWithDuration(level = 0, s"Finished")
 
-    exportPreBuildRecordsData(candidateKeys, candidateKeyToDocIds, docIdToMappingResult, queryColumnsCount, dataName)
+    exportPreBuildRecordsData(candidateKeys, candidateKeyToDocIds, docIdToMappingResult, queryColumnsCount, dataName, keyToScore)
 
     Table(
       docId = -1,
@@ -230,7 +231,7 @@ class TrexAlgorithm(indexReader: IndexReader,
       }
 
     val similarities = candidateKeyToQueryTableSim.toMap.map{ case (_, score) => score * 10 }.toList
-    val threshold = otsu.getThreshold(similarities) / 10
+    val threshold = otsu.getThreshold(similarities) / 30
 
     candidateKeyToQueryTableSim
       .filter { case (_, score) => score >= threshold }
@@ -314,8 +315,9 @@ class TrexAlgorithm(indexReader: IndexReader,
                                         keyToDocIds: Map[String, Set[Int]],
                                         docIdToMappingResult: Map[Int,MappingPipeResult],
                                         clmnsCount: Int,
-                                        dataName: String): Unit = {
-    var data = getPreBuildRecordsData(keys, keyToDocIds, docIdToMappingResult, clmnsCount)
+                                        dataName: String,
+                                        keyToScore: Map[String, Double]): Unit = {
+    var data = getPreBuildRecordsData(keys, keyToDocIds, docIdToMappingResult, clmnsCount, keyToScore)
 
     serializer.saveAsJson(data, s"${dataName}_PreBuildsRecordsData")
 
@@ -324,7 +326,8 @@ class TrexAlgorithm(indexReader: IndexReader,
   private def getPreBuildRecordsData(keys: List[String],
                                      keyToDocIds: Map[String, Set[Int]],
                                      docIdToMappingResult: Map[Int,MappingPipeResult],
-                                     clmnsCount: Int): Map[String, KeyColumnsValuesModel] = {
+                                     clmnsCount: Int,
+                                     keyToScore: Map[String, Double]): Seq[(String, KeyColumnsValuesModel)] = {
 
     keys.par.map { key =>
 
@@ -379,8 +382,10 @@ class TrexAlgorithm(indexReader: IndexReader,
 
       }
 
-      key -> KeyColumnsValuesModel(columnsWithValues)
-    }.seq.toMap
+      key -> KeyColumnsValuesModel(keyToScore(key), columnsWithValues)
+    }.seq.sortBy {
+      case (_, model) => model.score
+    }
 
   }
 

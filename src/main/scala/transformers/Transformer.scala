@@ -44,13 +44,15 @@ class Transformer {
 
     val jsonConfig = ujson.read(json)
 
+    val queryRowsCount = jsonConfig("query_rows_count").num.toInt
     val concept = jsonConfig("concept").str
     val clmnsCount = jsonConfig("clmns_count").num.toInt
     val task = TaskFlow.withName(jsonConfig("task").str)
 
-    val buff_cols = jsonConfig("clmns_relations").arr map(_.arr.map(el => el.num.toInt).toList)
+    val buffCols = jsonConfig("clmns_relations").arr map(_.arr.map(el => el.num.toInt).toList)
+    val docIds = jsonConfig("doc_ids").arr.map(el => el.num.toInt).toList
 
-    AppConfig(task, clmnsCount, buff_cols.toList, concept)
+    AppConfig(task, queryRowsCount, clmnsCount, buffCols.toList, concept, docIds)
 
   }
 

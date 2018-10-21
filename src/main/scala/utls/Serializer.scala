@@ -38,10 +38,10 @@ class Serializer() {
     value
   }
 
-  def saveAsJson(value: Any, name: String): Unit = {
+  def saveAsJson(value: Any, name: String, folder: String = "json"): Unit = {
     implicit val formats = DefaultFormats
     val jsonString = write(value)
-    new PrintWriter(s"json/$name.json") { write(jsonString); close }
+    new PrintWriter(s"$folder/$name.json") { write(jsonString); close }
   }
 
 }
