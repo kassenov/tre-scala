@@ -54,15 +54,7 @@ object Main extends App {
       val queryTableColumns = Table.getColumnsWithRandomRows(count=4, groundTruthTable, shuffle = false)
       val queryTable = new Table(docId = 0,"Query", "None", keyIdx = Some(0), hdrIdx = Some(0), columns = queryTableColumns)
 
-      val tableColumnsRelations = List(
-        //    TableColumnsRelation(List(0, 1)),
-        //    TableColumnsRelation(List(0, 2)),
-        //    TableColumnsRelation(List(0, 3)),
-        //    TableColumnsRelation(List(0, 4)),
-        //    TableColumnsRelation(List(0, 5)),
-        //    TableColumnsRelation(List(0, 1, 2, 3, 4, 5)),
-        TableColumnsRelation(List(0, 1, 2)),
-      )
+      val tableColumnsRelations = configs.columnsRelations.map(rel => TableColumnsRelation(rel))
 
       println("Start")
       val startTime = System.nanoTime
@@ -101,14 +93,12 @@ object Main extends App {
         hdrIdx = None,
         columns = evalColumns
       )
-//      val evalResults = evaluator.evaluate(retrievedTable1)
+
       val evalResults = evaluator.evaluate(evalTable)
       println(s"Evals: $evalResults")
 
     case TaskFlow.KeysAnalysis =>
 
-      val entitiesTermFrequencyProvider = new LuceneIndexTermFrequencyProvider(reader, IndexFields.entities)
-      val keySearcher = new KeySearcherWithSimilarity(entitiesTermFrequencyProvider, analyzer)
       val keysAnalyzer = new KeysAnalysis(concept, reader, analyzer)
       keysAnalyzer.generate(groundTruthTable)
 

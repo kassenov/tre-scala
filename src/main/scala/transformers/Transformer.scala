@@ -48,7 +48,9 @@ class Transformer {
     val clmnsCount = jsonConfig("clmns_count").num.toInt
     val task = TaskFlow.withName(jsonConfig("task").str)
 
-    AppConfig(task, clmnsCount, concept)
+    val buff_cols = jsonConfig("clmns_relations").arr map(_.arr.map(el => el.num.toInt).toList)
+
+    AppConfig(task, clmnsCount, buff_cols.toList, concept)
 
   }
 
