@@ -237,6 +237,40 @@ class TrexAlgorithm(indexReader: IndexReader,
       .map { case (key, _) => key }
   }
 
+  private def getCandidateKeysToSim(candidateKeys: List[String],
+                                    candidateKeyToDocIds: Map[String, Set[Int]],
+                                    queryKeys: List[Option[String]],
+                                    queryKeyToCandidateDocIds: Map[String, Set[Int]],
+                                    docIdToMappingResult: Map[Int,MappingPipeResult],
+                                    clmnsCount: Int): Map[String, Double] =
+      candidateKeys.map { candidateKey =>
+        val candidateKeyDocIds = candidateKeyToDocIds(candidateKey)
+
+        val score = queryKeys.flatten.map { queryKey =>
+          val queryKeyDocIds = queryKeyToCandidateDocIds(queryKey)
+
+          // FIXME Update scoring for candidate keys (it's relevance only, we need coherence too)
+
+          val unionScore = queryKeyDocIds.union(candidateKeyDocIds)
+            .map { candidateDocId =>
+              docIdToMappingResult(candidateDocId).columnsMapping.score
+                .aggregatedByColumns.score / clmnsCount
+            }.sum
+
+          val intersectionScore = queryKeyDocIds.intersect(candidateKeyDocIds)
+            .map { candidateDocId =>
+              docIdToMappingResult(candidateDocId).columnsMapping.score
+                .aggregatedByColumns.score / clmnsCount
+            }.sum
+
+          intersectionScore / unionScore
+
+        }.sum / queryKeys.size
+
+        candidateKey -> score
+
+      }.toMap
+
   private def buildRecords(keys: List[String],
                            keyToDocIds: Map[String, Set[Int]],
                            docIdToMappingResult: Map[Int,MappingPipeResult],

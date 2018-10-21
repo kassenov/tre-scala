@@ -1,6 +1,7 @@
 package transformers
 
 import models.Table
+import utls.{AppConfig, TaskFlow}
 
 class Transformer {
 
@@ -36,6 +37,18 @@ class Transformer {
 //    val headersStr = columns.map(column => column.head).mkString(" ")
 //    val entitiesStr = columns.map(column => column drop 1 mkString " ").mkString(" ")
 //    val keysStr = columns.head.mkString(" ")
+
+  }
+
+  def rawJsonToAppConfig(json: String): AppConfig = {
+
+    val jsonConfig = ujson.read(json)
+
+    val concept = jsonConfig("concept").str
+    val clmnsCount = jsonConfig("clmns_count").num.toInt
+    val task = TaskFlow.withName(jsonConfig("task").str)
+
+    AppConfig(task, clmnsCount, concept)
 
   }
 
