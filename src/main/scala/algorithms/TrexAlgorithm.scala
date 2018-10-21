@@ -95,7 +95,7 @@ class TrexAlgorithm(indexReader: IndexReader,
     reportWithDuration(level = 1, s"Selected values")
     reportWithDuration(level = 0, s"Finished")
 
-    exportPreBuildRecordsData(candidateKeys, candidateKeyToDocIds, docIdToMappingResult, queryColumnsCount, dataName, keyToScore)
+    exportPreBuildRecordsData(queryKeys, candidateKeys, candidateKeyToDocIds, docIdToMappingResult, queryColumnsCount, dataName, keyToScore)
 
     Table(
       docId = -1,
@@ -311,13 +311,14 @@ class TrexAlgorithm(indexReader: IndexReader,
       Some(key) :: values
     }.toList
 
-  private def exportPreBuildRecordsData(keys: List[String],
+  private def exportPreBuildRecordsData(queryKeys: List[Option[String]],
+                                        keys: List[String],
                                         keyToDocIds: Map[String, Set[Int]],
                                         docIdToMappingResult: Map[Int,MappingPipeResult],
                                         clmnsCount: Int,
                                         dataName: String,
                                         keyToScore: Map[String, Double]): Unit = {
-    var data = getPreBuildRecordsData(keys, keyToDocIds, docIdToMappingResult, clmnsCount, keyToScore)
+    val data = getPreBuildRecordsData(queryKeys.flatten.map(k => k.toLowerCase()) ++ keys, keyToDocIds, docIdToMappingResult, clmnsCount, keyToScore)
 
     serializer.saveAsJson(data, s"${dataName}_PreBuildsRecordsData")
 
