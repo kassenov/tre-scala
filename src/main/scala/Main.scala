@@ -2,7 +2,7 @@ import java.io.File
 import java.util.concurrent.TimeUnit
 
 import algorithms.TrexAlgorithm
-import evaluation.Evaluator
+import evaluation.{Evaluator, KeysAnalysis}
 import models.Table
 import models.index.IndexFields
 import models.relation.TableColumnsRelation
@@ -107,7 +107,10 @@ object Main extends App {
 
     case TaskFlow.KeysAnalysis =>
 
-      val b = 12
+      val entitiesTermFrequencyProvider = new LuceneIndexTermFrequencyProvider(reader, IndexFields.entities)
+      val keySearcher = new KeySearcherWithSimilarity(entitiesTermFrequencyProvider, analyzer)
+      val keysAnalyzer = new KeysAnalysis(concept, reader, analyzer)
+      keysAnalyzer.generate(groundTruthTable)
 
   }
 
