@@ -332,58 +332,63 @@ class TrexAlgorithm(indexReader: IndexReader,
 
     keys.par.map { key =>
 
-      val docIds = keyToDocIds(key)
-      val columnsWithValues = List.range(1, clmnsCount).map { queryClmIdx =>
+      if (keyToDocIds.contains(key)) {
+        val docIds = keyToDocIds(key)
+        val columnsWithValues = List.range(1, clmnsCount).map { queryClmIdx =>
 
-        val candValueToScoreMap = mutable.Map[String, Double]()
-        val candValueToDocIdsMap = mutable.Map[String, mutable.ListBuffer[Int]]()
+          val candValueToScoreMap = mutable.Map[String, Double]()
+          val candValueToDocIdsMap = mutable.Map[String, mutable.ListBuffer[Int]]()
 
-        docIds.foreach { docId =>
-          val mappingResult = docIdToMappingResult(docId)
-          val rowIdx = mappingResult.candidateKeysWithIndexes.find(c => c.value == key).get.idx
+          docIds.foreach { docId =>
+            val mappingResult = docIdToMappingResult(docId)
+            val rowIdx = mappingResult.candidateKeysWithIndexes.find(c => c.value == key).get.idx
 
-          val jsonTable = tableSearcher.getRawJsonTableByDocId(docId)
-          val table = transformer.rawJsonToTable(docId, jsonTable)
-          mappingResult.columnsMapping.columnIdxes(queryClmIdx) match {
-            case Some(candClmIdx) if table.columns(candClmIdx)(rowIdx).isDefined =>
-              val value = table.columns(candClmIdx)(rowIdx).get.toLowerCase
-              val score = mappingResult.columnsMapping.score.columns(queryClmIdx).get.score
-              if (!candValueToScoreMap.contains(value)) {
-                candValueToScoreMap(value) = score
-                candValueToDocIdsMap(value) = mutable.ListBuffer[Int](docId)
-              } else {
-                candValueToScoreMap(value) = candValueToScoreMap(value) + score
-                candValueToDocIdsMap(value) += docId
-              }
-            case None             => //
+            val jsonTable = tableSearcher.getRawJsonTableByDocId(docId)
+            val table = transformer.rawJsonToTable(docId, jsonTable)
+            mappingResult.columnsMapping.columnIdxes(queryClmIdx) match {
+              case Some(candClmIdx) if table.columns(candClmIdx)(rowIdx).isDefined =>
+                val value = table.columns(candClmIdx)(rowIdx).get.toLowerCase
+                val score = mappingResult.columnsMapping.score.columns(queryClmIdx).get.score
+                if (!candValueToScoreMap.contains(value)) {
+                  candValueToScoreMap(value) = score
+                  candValueToDocIdsMap(value) = mutable.ListBuffer[Int](docId)
+                } else {
+                  candValueToScoreMap(value) = candValueToScoreMap(value) + score
+                  candValueToDocIdsMap(value) += docId
+                }
+              case None             => //
+            }
           }
-        }
 
-        val cellValues = candValueToScoreMap.keys.map { value =>
-          CellValue(
-            value = value,
-            relevance = 0,
-            coherence = 0,
-            score = candValueToScoreMap(value),
-            docIds = candValueToDocIdsMap(value).toSet
+          val cellValues = candValueToScoreMap.keys.map { value =>
+            CellValue(
+              value = value,
+              relevance = 0,
+              coherence = 0,
+              score = candValueToScoreMap(value),
+              docIds = candValueToDocIdsMap(value).toSet
+            )
+          }
+
+          val selectedValue = if (candValueToScoreMap.isEmpty) {
+            None
+          } else {
+            Some(candValueToScoreMap.maxBy{ case (_, score) => score }._1)
+          }
+
+          ColumnCellValues(
+            clmnIdx = queryClmIdx,
+            selectedValue = selectedValue,
+            values = cellValues.toList
           )
+
         }
 
-        val selectedValue = if (candValueToScoreMap.isEmpty) {
-          None
-        } else {
-          Some(candValueToScoreMap.maxBy{ case (_, score) => score }._1)
-        }
-
-        ColumnCellValues(
-          clmnIdx = queryClmIdx,
-          selectedValue = selectedValue,
-          values = cellValues.toList
-        )
-
+        key -> KeyColumnsValuesModel(keyToScore(key), columnsWithValues)
+      } else {
+        key -> KeyColumnsValuesModel(0, List.empty)
       }
 
-      key -> KeyColumnsValuesModel(keyToScore(key), columnsWithValues)
     }.seq.sortBy {
       case (_, model) => model.score
     }
