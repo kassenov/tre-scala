@@ -7,6 +7,8 @@ import de.siegmar.fastcsv.reader.CsvReader
 import de.siegmar.fastcsv.writer.CsvWriter
 import models.Table
 
+import scala.util.{Failure, Success, Try}
+
 class CsvUtils() {
 
   def exportTable(table: Table, name: String): Unit = {
@@ -45,7 +47,13 @@ class CsvUtils() {
 
     val csvParser = csvReader.parse(file, StandardCharsets.UTF_8)
     val records = Iterator.continually(csvParser.nextRow()).takeWhile(_ != null) map { row =>
-      List.range(0, clmnsCount).map(clmnIdx => Some(row.getField(clmnIdx)))
+      List.range(0, clmnsCount).map { clmnIdx =>
+        val field = Try(row.getField(clmnIdx)) match {
+          case Success(f) => f
+          case Failure(ex) => ""
+        }
+        Some(field)
+      }
     }
 
     Table(

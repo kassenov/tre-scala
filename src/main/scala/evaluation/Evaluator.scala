@@ -5,7 +5,6 @@ import search.{KeySearcher, ValueSearcher}
 import utls.Serializer
 
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
 
 case class EvaluationValuesWithNM(clmnIdx: Int,
                                   evalScore: EvaluationScore,
@@ -15,7 +14,6 @@ case class EvaluationValuesWithNM(clmnIdx: Int,
 case class EvaluationKeysWithNM(result: EvaluationResult,
                                 nfIdxs: List[(Int, Option[String])],
                                 nmIdxs: List[(Int, Option[String])],
-                                values: List[EvaluationValuesWithNM],
                                 nfRecs: List[List[Option[String]]],
                                 nmRecs: List[List[Option[String]]])
 
@@ -130,7 +128,7 @@ class Evaluator(groundTruthTable: Table,
         if (clmnIdxToValue.contains(clmnIdx)) {
           clmnIdxToValue(clmnIdx)
         } else {
-          None
+          Some("-match-")
         }
       }
     }.toList
@@ -140,7 +138,7 @@ class Evaluator(groundTruthTable: Table,
         if (clmnIdxToValue.contains(clmnIdx)) {
           clmnIdxToValue(clmnIdx)
         } else {
-          None
+          Some("-match-")
         }
       }
     }.toList
@@ -149,7 +147,6 @@ class Evaluator(groundTruthTable: Table,
       EvaluationResult(columnScores = keyScore :: results.map(r => r.evalScore)),
       notFoundGTKeyIdxs,
       notMatchRTKeyIdxs,
-      results,
       nfRecords,
       nmRecords
     )
