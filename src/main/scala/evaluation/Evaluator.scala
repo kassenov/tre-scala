@@ -110,20 +110,18 @@ class Evaluator(groundTruthTable: Table,
     val nmRowIdxToRecord = mutable.Map[Int, mutable.Map[Int, Option[String]]]()
 
     results.foreach { result =>
-      List.range(1, clmnsCount).foreach { clmnIdx =>
-        result.nfIdxs.foreach { case (rowIdx, value) =>
-          if (!nfRowIdxToRecord.contains(rowIdx)) {
-            nfRowIdxToRecord += rowIdx -> mutable.Map[Int, Option[String]](0 -> groundTruthKeys(rowIdx))
-          }
-          nfRowIdxToRecord(rowIdx) += clmnIdx -> value
+      result.nfIdxs.foreach { case (rowIdx, value) =>
+        if (!nfRowIdxToRecord.contains(rowIdx)) {
+          nfRowIdxToRecord += rowIdx -> mutable.Map[Int, Option[String]](0 -> groundTruthKeys(rowIdx))
         }
+        nfRowIdxToRecord(rowIdx) += result.clmnIdx -> value
+      }
 
-        result.nmIdxs.foreach { case (rowIdx, value) =>
-          if (!nmRowIdxToRecord.contains(rowIdx)) {
-            nmRowIdxToRecord += rowIdx -> mutable.Map[Int, Option[String]](0 -> evalTableKeys(rowIdx))
-          }
-          nmRowIdxToRecord(rowIdx) += clmnIdx -> value
+      result.nmIdxs.foreach { case (rowIdx, value) =>
+        if (!nmRowIdxToRecord.contains(rowIdx)) {
+          nmRowIdxToRecord += rowIdx -> mutable.Map[Int, Option[String]](0 -> evalTableKeys(rowIdx))
         }
+        nmRowIdxToRecord(rowIdx) += result.clmnIdx -> value
       }
     }
 
