@@ -5,7 +5,7 @@ import search.{KeySearcher, ValueSearcher}
 import utls.Serializer
 
 case class EvaluationValuesWithNM(clmnIdx: Int, evalScore: EvaluationScore, nfIdxs: List[Int], nmIdxs: List[Int])
-case class EvaluationKeysWithNM(result: EvaluationResult, nfIdxs: List[Int], nmIdxs: List[Int])
+case class EvaluationKeysWithNM(result: EvaluationResult, nfIdxs: List[Int], nmIdxs: List[Int], values: List[EvaluationValuesWithNM])
 
 class Evaluator(groundTruthTable: Table,
                 keySearch: KeySearcher,
@@ -77,25 +77,28 @@ class Evaluator(groundTruthTable: Table,
 
       }.seq.toMap//.toList.sortBy(m => m._1).map(m => m._2)
 
-      val notFoundGTValueIdxs = valueTruthRowIdxToEvalRowIdx.filterNot(m => m._2.isDefined).keys
-      val notMatchRTValueIdxs = List.range(0, tableClmnColumn.size).toSet.filterNot(valueTruthRowIdxToEvalRowIdx.values.flatten.toSet)
+      val notFoundGTValueIdxs = valueTruthRowIdxToEvalRowIdx.filterNot(m => m._2.isDefined).keys.toList
+      val matchRTValueIdxs = valueTruthRowIdxToEvalRowIdx.values.flatten.toList
+      val notMatchRTValueIdxs = List.range(0, tableClmnColumn.size).filterNot(idx => matchRTValueIdxs.contains(idx))
 
       val matchValuesCount = valueTruthRowIdxToEvalRowIdx.flatMap(m => m._2).toSet.size//.flatten.distinct.length
 
       val precision = calculatePrecision(matchValuesCount, matchKeysCount)//retrievedTotalRowsCount)
       val recall = calculateRecall(matchValuesCount, matchKeysCount) //truthTotalRowsCount)
 
-      EvaluationValuesWithNM(clmnIdx, EvaluationScore(precision, recall), notFoundGTValueIdxs.toList, notMatchRTValueIdxs.toList)
+      EvaluationValuesWithNM(clmnIdx, EvaluationScore(precision, recall), notFoundGTValueIdxs, notMatchRTValueIdxs)
 
     }
 
-    val notFoundGTKeyIdxs = keyTruthRowIdxToEvalRowIdx.filterNot(m => m._2.isDefined).keys
-    val notMatchRTKeyIdxs = List.range(0, evalTableKeys.size).toSet.filterNot(keyTruthRowIdxToEvalRowIdx.values.flatten.toSet)
+    val notFoundGTKeyIdxs = keyTruthRowIdxToEvalRowIdx.filterNot(m => m._2.isDefined).keys.toList
+    val matchRTKeyIdxs = keyTruthRowIdxToEvalRowIdx.values.flatten.toList
+    val notMatchRTKeyIdxs = List.range(0, evalTableKeys.size).filterNot(idx => matchRTKeyIdxs.contains(idx))
 
     val eval = EvaluationKeysWithNM(
       EvaluationResult(columnScores = keyScore :: results.map(r => r.evalScore)),
-      notFoundGTKeyIdxs.toList,
-      notMatchRTKeyIdxs.toList
+      notFoundGTKeyIdxs,
+      notMatchRTKeyIdxs,
+      results
     )
 
     serializer.saveAsJson(eval, s"${dataName}_EvalsData")
