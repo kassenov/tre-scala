@@ -81,7 +81,7 @@ object Main extends App {
       val contentTermFrequencyProvider = new LuceneIndexTermFrequencyProvider(reader, IndexFields.content)
       val valueSearcher = new ValueSearcherWithSimilarity(contentTermFrequencyProvider, analyzer)
 
-      val evaluator = new Evaluator(groundTruthTable, keySearcher, valueSearcher)
+      val evaluator = new Evaluator(groundTruthTable, keySearcher, valueSearcher, s"$concept${configs.queryRowsCount}")
 
       val evalColumns = queryTable1.columns.zipWithIndex.map { case (clmn, clmnIdx) =>
         clmn ::: retrievedTable1.columns(clmnIdx)

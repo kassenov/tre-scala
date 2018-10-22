@@ -2,9 +2,17 @@ package evaluation
 
 import models.Table
 import search.{KeySearcher, ValueSearcher}
+import utls.Serializer
 
-class Evaluator(groundTruthTable: Table, keySearch: KeySearcher, valueSearch: ValueSearcher) {
+case class EvaluationValuesWithNM(clmnIdx: Int, evalScore: EvaluationScore, nfIdxs: List[Int], nmIdxs: List[Int])
+case class EvaluationKeysWithNM(result: EvaluationResult, nfIdxs: List[Int], nmIdxs: List[Int])
 
+class Evaluator(groundTruthTable: Table,
+                keySearch: KeySearcher,
+                valueSearch: ValueSearcher,
+                dataName: String) {
+
+  private val serializer = new Serializer()
   lazy val clmnsCount: Int = groundTruthTable.columns.length
 
   def evaluate(evalTable: Table): EvaluationResult = {
@@ -12,10 +20,11 @@ class Evaluator(groundTruthTable: Table, keySearch: KeySearcher, valueSearch: Va
     val retrievedTotalRowsCount = evalTable.columns.head.length
     val truthTotalRowsCount = groundTruthTable.columns.head.length
 
+    val groundTruthKeys = Table.getKeys(groundTruthTable)
     val evalTableKeys = Table.getKeys(evalTable)
 
     val keyTruthRowIdxToEvalRowIdx =
-      Table.getKeys(groundTruthTable).zipWithIndex.par.map { case (truthKey, truthKeyIdx) =>
+      groundTruthKeys.zipWithIndex.par.map { case (truthKey, truthKeyIdx) =>
 
         if (truthKey.isDefined) {
           val valueMatch =
@@ -34,15 +43,15 @@ class Evaluator(groundTruthTable: Table, keySearch: KeySearcher, valueSearch: Va
           truthKeyIdx -> None
         }
 
-      }.toList.sortBy(m => m._1).map(m => m._2)
+      }.seq.toMap//.toList.sortBy(m => m._1).map(m => m._2)
 
-    val matchKeysCount = keyTruthRowIdxToEvalRowIdx.flatten.distinct.length
+    val matchKeysCount = keyTruthRowIdxToEvalRowIdx.flatMap(m => m._2).toSet.size
 
     val keyPrecision = calculatePrecision(matchKeysCount, retrievedTotalRowsCount)
     val keyRecall = calculateRecall(matchKeysCount, truthTotalRowsCount)
     val keyScore = EvaluationScore(keyPrecision, keyRecall)
 
-    val scores = List.range(1, clmnsCount).map { clmnIdx =>
+    val results = List.range(1, clmnsCount).map { clmnIdx =>
       val truthClmnColumn = groundTruthTable.columns(clmnIdx)
       val tableClmnColumn = evalTable.columns(clmnIdx)
       val valueTruthRowIdxToEvalRowIdx = truthClmnColumn.zipWithIndex.par.map { case (truthValue, truthRowIdx) =>
@@ -66,17 +75,32 @@ class Evaluator(groundTruthTable: Table, keySearch: KeySearcher, valueSearch: Va
           case None => truthRowIdx -> None
         }
 
-      }.toList.sortBy(m => m._1).map(m => m._2)
+      }.seq.toMap//.toList.sortBy(m => m._1).map(m => m._2)
 
-      val matchValuesCount = valueTruthRowIdxToEvalRowIdx.flatten.distinct.length
+      val notFoundGTValueIdxs = valueTruthRowIdxToEvalRowIdx.filterNot(m => m._2.isDefined).keys
+      val notMatchRTValueIdxs = List.range(0, tableClmnColumn.size).toSet.filterNot(valueTruthRowIdxToEvalRowIdx.values.flatten.toSet)
+
+      val matchValuesCount = valueTruthRowIdxToEvalRowIdx.flatMap(m => m._2).toSet.size//.flatten.distinct.length
 
       val precision = calculatePrecision(matchValuesCount, matchKeysCount)//retrievedTotalRowsCount)
       val recall = calculateRecall(matchValuesCount, matchKeysCount) //truthTotalRowsCount)
-      EvaluationScore(precision, recall)
+
+      EvaluationValuesWithNM(clmnIdx, EvaluationScore(precision, recall), notFoundGTValueIdxs.toList, notMatchRTValueIdxs.toList)
 
     }
 
-    EvaluationResult(columnScores = keyScore :: scores)
+    val notFoundGTKeyIdxs = keyTruthRowIdxToEvalRowIdx.filterNot(m => m._2.isDefined).keys
+    val notMatchRTKeyIdxs = List.range(0, evalTableKeys.size).toSet.filterNot(keyTruthRowIdxToEvalRowIdx.values.flatten.toSet)
+
+    val eval = EvaluationKeysWithNM(
+      EvaluationResult(columnScores = keyScore :: results.map(r => r.evalScore)),
+      notFoundGTKeyIdxs.toList,
+      notMatchRTKeyIdxs.toList
+    )
+
+    serializer.saveAsJson(eval, s"${dataName}_EvalsData")
+
+    eval.result
 
   }
 
