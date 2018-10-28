@@ -206,23 +206,28 @@ class TrexAlgorithm(indexReader: IndexReader,
         val candidateKeyDocIds = candidateKeyToDocIds(candidateKey)
 
         val score = queryKeys.flatten.map { queryKey =>
-          val queryKeyDocIds = queryKeyToCandidateDocIds(queryKey)
 
-          // FIXME Update scoring for candidate keys (it's relevance only, we need coherence too)
+          if (queryKeyToCandidateDocIds.contains(queryKey)) {
+            val queryKeyDocIds = queryKeyToCandidateDocIds(queryKey)
 
-          val unionScore = queryKeyDocIds.union(candidateKeyDocIds)
-            .map { candidateDocId =>
-              docIdToMappingResult(candidateDocId).columnsMapping.score
-                .aggregatedByColumns.score / clmnsCount
-            }.sum
+            // FIXME Update scoring for candidate keys (it's relevance only, we need coherence too)
 
-          val intersectionScore = queryKeyDocIds.intersect(candidateKeyDocIds)
-            .map { candidateDocId =>
-              docIdToMappingResult(candidateDocId).columnsMapping.score
-                .aggregatedByColumns.score / clmnsCount
-            }.sum
+            val unionScore = queryKeyDocIds.union(candidateKeyDocIds)
+              .map { candidateDocId =>
+                docIdToMappingResult(candidateDocId).columnsMapping.score
+                  .aggregatedByColumns.score / clmnsCount
+              }.sum
 
-          intersectionScore / unionScore
+            val intersectionScore = queryKeyDocIds.intersect(candidateKeyDocIds)
+              .map { candidateDocId =>
+                docIdToMappingResult(candidateDocId).columnsMapping.score
+                  .aggregatedByColumns.score / clmnsCount
+              }.sum
+
+            intersectionScore / unionScore
+          } else {
+            0
+          }
 
         }.sum / queryKeys.size
 
@@ -248,23 +253,28 @@ class TrexAlgorithm(indexReader: IndexReader,
         val candidateKeyDocIds = candidateKeyToDocIds(candidateKey)
 
         val score = queryKeys.flatten.map { queryKey =>
-          val queryKeyDocIds = queryKeyToCandidateDocIds(queryKey)
+          if (queryKeyToCandidateDocIds.contains(queryKey)) {
+            val queryKeyDocIds = queryKeyToCandidateDocIds(queryKey)
 
-          // FIXME Update scoring for candidate keys (it's relevance only, we need coherence too)
+            // FIXME Update scoring for candidate keys (it's relevance only, we need coherence too)
 
-          val unionScore = queryKeyDocIds.union(candidateKeyDocIds)
-            .map { candidateDocId =>
-              docIdToMappingResult(candidateDocId).columnsMapping.score
-                .aggregatedByColumns.score / clmnsCount
-            }.sum
+            val unionScore = queryKeyDocIds.union(candidateKeyDocIds)
+              .map { candidateDocId =>
+                docIdToMappingResult(candidateDocId).columnsMapping.score
+                  .aggregatedByColumns.score / clmnsCount
+              }.sum
 
-          val intersectionScore = queryKeyDocIds.intersect(candidateKeyDocIds)
-            .map { candidateDocId =>
-              docIdToMappingResult(candidateDocId).columnsMapping.score
-                .aggregatedByColumns.score / clmnsCount
-            }.sum
+            val intersectionScore = queryKeyDocIds.intersect(candidateKeyDocIds)
+              .map { candidateDocId =>
+                docIdToMappingResult(candidateDocId).columnsMapping.score
+                  .aggregatedByColumns.score / clmnsCount
+              }.sum
 
-          intersectionScore / unionScore
+            intersectionScore / unionScore
+          }
+          else {
+            0
+          }
 
         }.sum / queryKeys.size
 
