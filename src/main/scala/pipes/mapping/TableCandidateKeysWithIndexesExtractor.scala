@@ -5,13 +5,13 @@ import models.matching.{KeyWithIndex, TableMatch}
 
 class TableCandidateKeysWithIndexesExtractor() {
 
-  def extract(table: Table, tableMatching: TableMatch): List[KeyWithIndex] = {
+  def extract(tableKeys: List[Option[String]], tableMatching: TableMatch): List[KeyWithIndex] = {
 
     val excludeIdxes = tableMatching.keyMatches.flatten { keyMatch =>
       keyMatch.rowMatches.map(rowMatch => rowMatch.candidateRowId)
     }
 
-    Table.getKeys(table)
+    tableKeys
       .zipWithIndex
       .flatMap {
         case (key, idx) if key.isDefined && !excludeIdxes.contains(idx) => Some(KeyWithIndex(key.get.toLowerCase, idx))

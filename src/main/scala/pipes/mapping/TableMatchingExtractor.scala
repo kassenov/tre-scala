@@ -44,7 +44,7 @@ class TableMatchingExtractor(keySearch: KeySearcher, valueSearch: ValueSearcher)
 
         }
 
-    TableMatch(keyValueMatches)
+    TableMatch(keyValueMatches, Table.getKeys(candidateTable))
 
   }
 

@@ -16,9 +16,7 @@ class TableMatchMatrixExtractor() {
     * @param tableColumnsRelations relation between columns
     * @return
     */
-  def extract(queryTable: Table, tableMatch: TableMatch, tableColumnsRelations: List[TableColumnsRelation]): MatchMatrix = {
-
-    val queryColumnsCount = queryTable.columns.length
+  def extract(queryColumnsCount: Int, tableMatch: TableMatch, tableColumnsRelations: List[TableColumnsRelation]): MatchMatrix = {
 
     val matchMtrxClmnsWithIdxes = List.fill(queryColumnsCount) {ListBuffer[List[Int]]()}
 
