@@ -48,7 +48,7 @@ class TrexAlgorithm(indexReader: IndexReader,
   override def run(queryTable: Table): Table = {
     super.initTimings(levels = 3)
 
-    val queryKeys = Table.getKeys(queryTable)
+    val queryKeys = Table.getKeys(queryTable).distinct
     val queryColumnsCount = queryTable.columns.length
 
     // Mapping candidate tables
