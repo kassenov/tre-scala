@@ -24,10 +24,16 @@ class MappingPipe(keySearcher: KeySearcher, valueSearcher: ValueSearcher) {
         None
       } else {
         val matchMatrix = tableMatchMatrixExtractor.extract(queryTable, tableMatch, tableColumnsRelations)
-        val columnsMapping = tableMappingExtractor.extract(matchMatrix, tableMatch)
-        val candidateKeysWithIndexes = tableCandidateKeysWithIndexesExtractor.extract(candidateTable, tableMatch)
 
-        Some(MappingPipeResult(columnsMapping, candidateKeysWithIndexes, tableMatch))
+        if (!matchMatrix.columns.exists(c => c.cells.nonEmpty)) {
+          None
+        } else {
+          val columnsMapping = tableMappingExtractor.extract(matchMatrix, tableMatch)
+          val candidateKeysWithIndexes = tableCandidateKeysWithIndexesExtractor.extract(candidateTable, tableMatch)
+
+          Some(MappingPipeResult(columnsMapping, candidateKeysWithIndexes, tableMatch))
+        }
+
       }
     }
 

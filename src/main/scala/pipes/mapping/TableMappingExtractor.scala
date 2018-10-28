@@ -9,6 +9,10 @@ class TableMappingExtractor() {
 
   def extract(matchMatrix: MatchMatrix, tableMatch: TableMatch): ColumnsMapping = {
 
+    if (!matchMatrix.columns.exists(c => c.cells.nonEmpty)) {
+      val a = 1
+    }
+
     // TODO maybe don't need the check - always non empty list as matrix?
     val queryKeysCount = matchMatrix.columns.find(c => c.cells.nonEmpty).get.cells.size
 
