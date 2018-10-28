@@ -100,7 +100,7 @@ object Main extends App {
 
     case TaskFlow.KeysAnalysis =>
 
-      val keysAnalyzer = new KeysAnalysis(concept, reader, analyzer)
+      val keysAnalyzer = new KeysAnalysis(concept, searcher, analyzer)
       keysAnalyzer.generate(groundTruthTable)
 
     case TaskFlow.Extracting =>

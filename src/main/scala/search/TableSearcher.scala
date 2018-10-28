@@ -16,11 +16,15 @@ trait TableSearcher {
 
   def getRelevantDocIdsByKeys(keys: List[Option[String]]): List[Int]
 
+  def getHitsByKeys(keys: List[Option[String]]): Int
+
   def getRawJsonTablesByDocIds(docIds: List[Int]): ParMap[Int, String]
 
   def getRawJsonTableByDocId(docId: Int): String
 
   def getRawJsonTablesByKeys(keys: List[Option[String]]): ParSeq[String]
+
+  def buildKeysQuery(keys: List[String]): BooleanQuery
 
 }
 
@@ -46,6 +50,23 @@ class LuceneTableSearcher(indexSearcher: IndexSearcher) extends TableSearcher {
       .toList
 
     List(previouslyFoundDocIds, docs).flatten
+
+  }
+
+  def getHitsByKeys(keys: List[Option[String]]): Int = {
+
+    if (keys.flatten.nonEmpty) {
+      try {
+        val query = buildKeysQuery(keys.flatten)
+        indexSearcher.search(query, 1).totalHits.toInt
+      } catch {
+        case _: Throwable =>
+          println(s"Error for key $keys")
+          0
+      }
+    } else {
+      0
+    }
 
   }
 
@@ -85,7 +106,7 @@ class LuceneTableSearcher(indexSearcher: IndexSearcher) extends TableSearcher {
   private lazy val field = "keys"
   private lazy val parser = new QueryParser(field, analyzer)
 
-  private def buildKeysQuery(keys: List[String]): BooleanQuery = {
+  def buildKeysQuery(keys: List[String]): BooleanQuery = {
     val builder = new BooleanQuery.Builder()
 
     keys.foreach { key =>
