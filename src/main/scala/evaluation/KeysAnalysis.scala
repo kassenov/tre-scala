@@ -20,7 +20,7 @@ class KeysAnalysis(concept: String, indexSearcher: IndexSearcher, analyzer: Anal
 
   def generate(table: Table): Unit = {
 
-    val records = Table.getKeys(table).par.map { key =>
+    val records = Table.getKeys(table).map { key =>
 //      val term = analyze(key)
 //      val frequency = indexReader.totalTermFreq(new Term("keys", term))
       val totalFound = tableSearcher.getHitsByKeys(List(key))

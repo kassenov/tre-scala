@@ -56,14 +56,18 @@ class LuceneTableSearcher(indexSearcher: IndexSearcher) extends TableSearcher {
   def getHitsByKeys(keys: List[Option[String]]): Int = {
 
     if (keys.flatten.nonEmpty) {
-      try {
+//      try {
         val query = buildKeysQuery(keys.flatten)
-        indexSearcher.search(query, 1).totalHits.toInt
-      } catch {
-        case _: Throwable =>
-          println(s"Error for key $keys")
-          0
-      }
+//        val hits = indexSearcher.search(query, 1).totalHits.toInt
+//        val hits = indexSearcher.count(query).totalHits.toInt
+        val hits = indexSearcher.count(query)
+        println(s"$keys hits $hits")
+        hits
+//      } catch {
+//        case _: Throwable =>
+//          println(s"---Error for key $keys")
+//          0
+//      }
     } else {
       0
     }
