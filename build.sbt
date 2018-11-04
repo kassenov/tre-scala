@@ -8,14 +8,14 @@
 //    case Some((2, n)) if n >= 12 => Seq("-Xsource:2.12", "-Xsource:2.12")
 //    case _ => Seq("-Yno-adapted-args")
 //  })
-scalaVersion := "2.13.0-M2"
+scalaVersion := "2.13.0-M3"
 
 name := "tre-scala"
 organization := "ca.uofa.scala"
 version := "1.0"
 
-//libraryDependencies += "org.scala-lang" % "scala-library" % "2.13.0-M5"
-libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.2"
+libraryDependencies += "org.scala-lang" % "scala-library" % "2.13.0-M3"
+libraryDependencies += "org.scala-lang.modules" % "scala-parallel-collections_2.13.0-M2" % "1.0.2"
 libraryDependencies += "org.apache.commons" % "commons-compress" % "1.17"
 libraryDependencies += "org.apache.commons" % "commons-text" % "1.4"
 libraryDependencies += "org.apache.lucene" % "lucene-analyzers-common" % "7.4.0"

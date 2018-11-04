@@ -32,7 +32,12 @@ class Serializer() {
   def deserialize(name: String): Any = {
     val str = Source.fromFile(s"serialized/$name").getLines.mkString
     val bytes = Base64.getDecoder().decode(str.getBytes(UTF_8))
-    val ois = new ObjectInputStream(new ByteArrayInputStream(bytes))
+    val ois = new ObjectInputStream(new ByteArrayInputStream(bytes)) {
+      override def resolveClass(desc: java.io.ObjectStreamClass): Class[_] = {
+        try { Class.forName(desc.getName, false, getClass.getClassLoader) }
+        catch { case ex: ClassNotFoundException => super.resolveClass(desc) }
+      }
+    }
     val value = ois.readObject
     ois.close
     value
