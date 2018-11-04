@@ -5,6 +5,7 @@ import search.{KeySearcher, ValueSearcher}
 import utls.Serializer
 
 import scala.collection.mutable
+import scala.collection.parallel.CollectionConverters._
 
 case class EvaluationValuesWithNM(clmnIdx: Int,
                                   evalScore: EvaluationScore,

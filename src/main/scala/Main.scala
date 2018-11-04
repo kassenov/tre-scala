@@ -49,6 +49,9 @@ object Main extends App {
 
   //====================================================
 
+  val docsNum = reader.numDocs()
+  print(docsNum)
+
   configs.task match {
     case TaskFlow.Mapping =>
 

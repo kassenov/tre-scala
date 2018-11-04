@@ -9,6 +9,7 @@ import org.apache.lucene.search.{BooleanClause, BooleanQuery, IndexSearcher}
 import org.apache.lucene.store.SimpleFSDirectory
 
 import scala.collection.parallel.immutable.{ParMap, ParSeq}
+import scala.collection.parallel.CollectionConverters._
 
 trait TableSearcher {
 

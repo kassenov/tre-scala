@@ -1,5 +1,7 @@
 package similarity
 
+import scala.collection.parallel.CollectionConverters._
+
 case class WeightedString(words: List[String], weights: List[Double], original: String, total: Double)
 
 object WeightedString {

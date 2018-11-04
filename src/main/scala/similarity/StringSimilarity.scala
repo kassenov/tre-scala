@@ -1,6 +1,7 @@
 package similarity
 
 import org.apache.commons.text.similarity.LevenshteinDistance
+import scala.collection.parallel.CollectionConverters._
 
 
 trait StringSimilarity {
@@ -119,9 +120,9 @@ class ByWordLevenshteinSimilarity(tfWeighter: TermFrequencyScorer,
 
   private def getExactMatchScore(queryTerm: String, inTerm: String): Double = {
     if (queryTerm == inTerm) {
-      1
+      1d
     } else {
-      0
+      0d
     }
   }
 

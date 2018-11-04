@@ -9,6 +9,7 @@ import similarity.{ByWordLevenshteinSimilarity, TermFrequencyScorer}
 import statistics.TermFrequencyProvider
 
 import scala.collection.mutable
+import scala.collection.parallel.CollectionConverters._
 
 trait ValueSearcher {
 

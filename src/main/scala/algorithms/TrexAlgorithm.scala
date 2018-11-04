@@ -15,7 +15,7 @@ import transformers.Transformer
 import utls.Serializer
 
 import scala.collection.mutable
-import scala.collection.parallel.ParMap
+import scala.collection.parallel.CollectionConverters._
 
 class TrexAlgorithm(indexReader: IndexReader,
                     tableSearcher: TableSearcher,

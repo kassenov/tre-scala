@@ -8,6 +8,7 @@ import pipes.filtering.{FilterTableByCandidateKeys, FilterTableBySize}
 import search.{KeySearcher, TableSearcher, ValueSearcher}
 import transformers.Transformer
 import utls.{CsvUtils, Serializer}
+import scala.collection.parallel.CollectionConverters._
 
 import scala.collection.parallel.ParMap
 
