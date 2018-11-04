@@ -4,7 +4,7 @@ package models.matching.matrix
   * Match Matrix is a data structure that keeps matches of original table in another table using indexes
   * and simplifies extracting a mapping between those tables.
   *
-  * Match matrix from original table (ot) to destination table (dt):
+  * Match matrix from original table (ot - query table) to destination table (dt):
   *
   *               ot.clmn-1   |   ot.clmn-2   | *** |   ot.clmn-n
   * ot.rec-1 -> [dt.clmn-idx] | [dt.clmn-idx] | *** | [dt.clmn-idx]

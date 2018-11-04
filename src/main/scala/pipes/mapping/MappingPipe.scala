@@ -22,6 +22,8 @@ class MappingPipe(keySearcher: KeySearcher,
   private val serializer = new Serializer()
   private val transformer = new Transformer
 
+  val queryKeys: List[Option[String]] = Table.getKeys(queryTable)
+
   val tableMatchingExtractor = new TableMatchingExtractor(keySearcher, valueSearcher)
   val tableMatchMatrixExtractor = new TableMatchMatrixExtractor()
   val tableMappingExtractor = new TableMappingExtractor()
@@ -44,7 +46,6 @@ class MappingPipe(keySearcher: KeySearcher,
       println(s"De-serializing matches from file...")
       serializer.deserialize(matchFileName).asInstanceOf[Map[Int,TableMatch]]
     } else {
-      val queryKeys = Table.getKeys(queryTable)
       val groupedDocIds = tableSearcher.getRelevantDocIdsByKeys(queryKeys).grouped(10000).toList
 
       val results = groupedDocIds.flatten { docIds =>
@@ -153,7 +154,7 @@ class MappingPipe(keySearcher: KeySearcher,
 
   private def processMapping(tableMatch: TableMatch, matchMatrix: MatchMatrix): Option[MappingPipeResult] = {
 
-    val columnsMapping = tableMappingExtractor.extract(matchMatrix, tableMatch)
+    val columnsMapping = tableMappingExtractor.extract(matchMatrix)
     val candidateKeysWithIndexes = tableCandidateKeysWithIndexesExtractor.extract(tableMatch.candidateTableKeys, tableMatch)
 
     Some(MappingPipeResult(columnsMapping, candidateKeysWithIndexes, tableMatch))
