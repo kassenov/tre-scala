@@ -86,9 +86,11 @@ class MappingPipe(keySearcher: KeySearcher,
 
     // ================ Frequency ================
 
-    val totalFrequencyMatrix = docIdToMatrix.par.map { case (docId, matrix) =>
+    val frequencyMatrices = docIdToMatrix.par.map { case (docId, matrix) =>
       tableMatchFrequencyMatrixExtractor.extract(docIdToTableMatch(docId), matrix)
-    }.seq.reduceLeft { case (a, b) =>
+    }.seq
+
+    val totalFrequencyMatrix = frequencyMatrices.reduceLeft((a, b) => {
       val columns = a.columns.zipWithIndex.map { case (a_column, clmn_idx) =>
         a_column.zipWithIndex.map { case (a_cell, row_idx) =>
           val b_cell = b.columns(clmn_idx)(row_idx)
@@ -97,7 +99,7 @@ class MappingPipe(keySearcher: KeySearcher,
       }
 
       MatchFrequencyMatrix(columns)
-    }
+    })
 
     // ================ Mapping ==================
 
@@ -162,7 +164,7 @@ class MappingPipe(keySearcher: KeySearcher,
 
   private def processMatrix(tableMatch: TableMatch, queryColumnsCount: Int): Option[MatchMatrix] = {
 
-    tableMatchMatrixExtractor.extract(queryColumnsCount, tableMatch, tableColumnsRelations) match {
+    tableMatchMatrixExtractor.extract(queryColumnsCount, queryKeys.length, tableMatch, tableColumnsRelations) match {
       case matchMatrix if !matchMatrix.columns.exists(c => c.cells.nonEmpty) => None
       case matchMatrix => Some(matchMatrix)
     }

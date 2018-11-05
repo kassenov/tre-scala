@@ -16,9 +16,9 @@ class TableMatchMatrixExtractor() {
     * @param tableColumnsRelations relation between columns
     * @return
     */
-  def extract(queryColumnsCount: Int, tableMatch: TableMatch, tableColumnsRelations: List[TableColumnsRelation]): MatchMatrix = {
+  def extract(queryColumnsCount: Int, queryKeysCount: Int, tableMatch: TableMatch, tableColumnsRelations: List[TableColumnsRelation]): MatchMatrix = {
 
-    val matchMtrxClmnsWithIdxes = List.fill(queryColumnsCount) {ListBuffer[List[Int]]()}
+    val matchMtrxClmnsWithIdxes = List.fill(queryColumnsCount) {ListBuffer.fill(queryKeysCount)(List[Int]())}
 
     tableMatch
       .keyMatches // <- for every query key
@@ -47,7 +47,7 @@ class TableMatchMatrixExtractor() {
         if (!relatedMatchCellsOfRow.exists { case (_, candidateColumnIdxes) => candidateColumnIdxes.isEmpty }) {
 
           relatedMatchCellsOfRow.foreach{ case (queryClmIdx, candidateColumnIdxes) =>
-            matchMtrxClmnsWithIdxes(queryClmIdx) += candidateColumnIdxes
+            matchMtrxClmnsWithIdxes(queryClmIdx)(keyMatch.queryRowIdx) = candidateColumnIdxes
           }
 
         } else {
