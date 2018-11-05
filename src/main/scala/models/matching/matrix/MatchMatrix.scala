@@ -20,13 +20,13 @@ case class MatchMatrix(columns: List[MatchingMatrixColumn])
 
 object MatchMatrix {
 
-  def getBestIdxPerColumnByCount(matrix: MatchMatrix): List[Option[IdxWithOccurrence]] =
+  def getBestIdxPerColumnByCount(matrix: MatchMatrix): List[Option[IdxWithScore]] =
     getIdxToOccurrenceMapByMatrix(matrix)
       .map { columnIdxToOccurrenceMap =>
 
         if (columnIdxToOccurrenceMap.nonEmpty) {
           columnIdxToOccurrenceMap.max match {
-            case (idx, occurrence) => Some(IdxWithOccurrence(idx, occurrence))
+            case (idx, occurrence) => Some(IdxWithScore(idx, occurrence, occurrence))
           }
         } else {
           None
@@ -41,7 +41,7 @@ object MatchMatrix {
 
   def getOccurrenceOfIdxesInQueryRowIdx(matrix: MatchMatrix,
                                         queryRowIdx: Int,
-                                        bestIdxPerColumn: List[Option[IdxWithOccurrence]]): List[Int] =
+                                        bestIdxPerColumn: List[Option[IdxWithScore]]): List[Int] =
     matrix.columns
       .zipWithIndex
       .map { case (column, queryClmIdx) =>
@@ -49,19 +49,6 @@ object MatchMatrix {
           case Some(idxWithOccurrence)
             if MatchingMatrixColumn.isRowHasIdx(column, queryRowIdx, idxWithOccurrence.idx) => 1
           case _                                                                            => 0
-        }
-      }
-
-  def getBestIdxPerColumnByMatchFrequency(matrix: MatchMatrix, frequencyMatrix: MatchFrequencyMatrix): List[Option[IdxWithOccurrence]] =
-    getIdxToOccurrenceMapByMatrix(matrix)
-      .map { columnIdxToOccurrenceMap =>
-
-        if (columnIdxToOccurrenceMap.nonEmpty) {
-          columnIdxToOccurrenceMap.max match {
-            case (idx, occurrence) => Some(IdxWithOccurrence(idx, occurrence))
-          }
-        } else {
-          None
         }
       }
 

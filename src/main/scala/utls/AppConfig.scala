@@ -10,3 +10,7 @@ case class AppConfig(task: TaskFlow.Value,
 object TaskFlow extends Enumeration {
   val Mapping, Evaluating, KeysAnalysis, Extracting = Value
 }
+
+object MapScoring extends Enumeration {
+  val Simple, AdjacentMatchWeight = Value
+}

@@ -25,4 +25,10 @@ class TableMatchFrequencyMatrixExtractor() {
 
   }
 
+  def computeCandClmnIdxToWeight(tableMatch: TableMatch, matchMatrix: MatchMatrix): Map[Int, Double] = {
+    val totalPossibleWeight = tableMatch.keyMatches.map { keyMatch =>
+      keyMatch.queryRowIdx
+    }
+  }
+
 }

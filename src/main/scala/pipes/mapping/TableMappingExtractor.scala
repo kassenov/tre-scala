@@ -1,10 +1,11 @@
 package pipes.mapping
 
 import models.mapping.ColumnsMapping
-import models.matching.matrix.MatchMatrix
+import models.matching.matrix.{IdxWithScore, MatchMatrix}
 import models.score.{MappingScore, TableMappingScore}
+import utls.MapScoring
 
-class TableMappingExtractor() {
+class TableMappingExtractor(scoringMethod: MapScoring.Value = MapScoring.AdjacentMatchWeight) {
 
   def extract(matchMatrix: MatchMatrix): ColumnsMapping = {
 
@@ -12,23 +13,16 @@ class TableMappingExtractor() {
 //      val a = 1
 //    }
 
-    // TODO maybe don't need the check - always non empty list as matrix?
-    val queryKeysCount = matchMatrix.columns.find(c => c.cells.nonEmpty).get.cells.size
+    val bestIdxPerColumn = scoringMethod match {
+      case MapScoring.Simple => getBestIdxPerColumnBySimpleScoring(matchMatrix)
+    }
 
-    // Filtering out by columns mismatches fraction
-    val bestIdxPerColumnAfterFilteringByColumns =
-      MatchMatrix.getBestIdxPerColumnByCount(matchMatrix)
-        .map {
-          case Some(idxWithOccurrence) if idxWithOccurrence.occurrence >= queryKeysCount / 2 => Some(idxWithOccurrence)
-          case _                                                                             => None
-        }
-
-    val columns = bestIdxPerColumnAfterFilteringByColumns.map{
+    val columns = bestIdxPerColumn.map{
       case Some(idxWithOccurrence) => Some(idxWithOccurrence.idx)
       case None => None
     }
 
-    val columnsScore = bestIdxPerColumnAfterFilteringByColumns.map{
+    val columnsScore = bestIdxPerColumn.map{
       case Some(idxWithOccurrence) => Some(MappingScore(idxWithOccurrence.occurrence))
       case None => None
     }
@@ -64,6 +58,19 @@ class TableMappingExtractor() {
 //          case Some(idxWithOccurrence) if idxWithOccurrence.occurrence >= queryKeysCount / 2 => Some(idxWithOccurrence)
 //          case _                                                                             => None
 //        }
+
+  }
+
+  def getBestIdxPerColumnBySimpleScoring(matchMatrix: MatchMatrix): List[Option[IdxWithScore]] = {
+    // TODO maybe don't need the check - always non empty list as matrix?
+    val queryKeysCount = matchMatrix.columns.find(c => c.cells.nonEmpty).get.cells.size
+
+    // Filtering out by columns mismatches fraction
+    MatchMatrix.getBestIdxPerColumnByCount(matchMatrix)
+      .map {
+        case Some(idxWithOccurrence) if idxWithOccurrence.occurrence >= queryKeysCount / 2 => Some(idxWithOccurrence)
+        case _                                                                             => None
+      }
 
   }
 
