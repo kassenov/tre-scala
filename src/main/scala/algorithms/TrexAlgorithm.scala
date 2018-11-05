@@ -164,21 +164,21 @@ class TrexAlgorithm(indexReader: IndexReader,
             val unionScore = queryKeyDocIds.union(candidateKeyDocIds)
               .map { candidateDocId =>
                 docIdToMappingResult(candidateDocId).columnsMapping.score
-                  .aggregatedByColumns.score / clmnsCount
+                  .aggregatedByColumns.score / clmnsCount.toDouble
               }.sum
 
             val intersectionScore = queryKeyDocIds.intersect(candidateKeyDocIds)
               .map { candidateDocId =>
                 docIdToMappingResult(candidateDocId).columnsMapping.score
-                  .aggregatedByColumns.score / clmnsCount
+                  .aggregatedByColumns.score / clmnsCount.toDouble
               }.sum
 
-            intersectionScore / unionScore
+            intersectionScore.toDouble / unionScore.toDouble
           } else {
             0
           }
 
-        }.sum / queryKeys.size
+        }.sum / queryKeys.size.toDouble
 
         candidateKey -> score
 

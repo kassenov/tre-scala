@@ -25,7 +25,7 @@ class TableMappingExtractor(scoringMethod: MapScoring.Value) {
     }
 
     val columnsScore = bestIdxPerColumn.map{
-      case Some(idxWithOccurrence) => Some(MappingScore(idxWithOccurrence.occurrence))
+      case Some(idxWithScore) => Some(MappingScore(idxWithScore.weight))
       case None => None
     }
 

@@ -60,7 +60,7 @@ object MatchMatrix {
                                   matchMatrix: MatchMatrix,
                                   frequencyMatrix: MatchFrequencyMatrix): List[Option[IdxWithScore]] = {
 
-    matchMatrix.columns.zipWithIndex
+    val results = matchMatrix.columns.zipWithIndex
       .map { case(mtrxColumn, queryClmnIdx) =>
         val candClmnIdxToQueryRowIdxs = MatchingMatrixColumn.getCandClmnIdxToQueryRowIdxsMap(mtrxColumn)
 
@@ -75,9 +75,9 @@ object MatchMatrix {
           candClmnIdxToQueryRowIdxs.map { case (candClmnIdx, queryRowIdxs) =>
             val weight = queryRowIdxs.map { queryRowIdx =>
               AdjacentMatches.getWeight(frequencyColumn(queryRowIdx))
-            }.sum - totalPossibleWeight
-            candClmnIdx -> (weight, queryRowIdxs.length)
-          }.maxBy {
+            }.sum
+            candClmnIdx -> (weight - (totalPossibleWeight / 2), queryRowIdxs.length)
+          } maxBy {
             case (_, (weight, _)) => weight
           } match {
             case (idx, (weight, occurrence)) => Some(IdxWithScore(idx, occurrence, weight))
@@ -88,6 +88,8 @@ object MatchMatrix {
         }
 
       }
+
+    results
   }
 
 }
