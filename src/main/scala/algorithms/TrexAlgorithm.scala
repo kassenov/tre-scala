@@ -22,7 +22,8 @@ class TrexAlgorithm(indexReader: IndexReader,
                     analyzer: Analyzer,
                     dataName: String,
                     tableColumnsRelations: List[TableColumnsRelation],
-                    scoringMethod: MapScoring.Value) extends Algorithm {
+                    scoringMethod: MapScoring.Value,
+                    topK: Int) extends Algorithm {
 
   private val transformer = new Transformer
   private val serializer = new Serializer()
@@ -71,7 +72,7 @@ class TrexAlgorithm(indexReader: IndexReader,
     // Top candidate keys
     println(s"===== Started to extract top candidate keys =====")
 
-    val topCandidateKeys = getTopCandidateKeys(candidateKeys, candidateKeyToDocIds, queryKeys, queryKeyToDocIds, docIdToMappingResult, queryColumnsCount)
+    val topCandidateKeys = getTopCandidateKeys(candidateKeys, candidateKeyToDocIds, queryKeys, queryKeyToDocIds, docIdToMappingResult, queryColumnsCount, topK)
     val keyToScore = getCandidateKeysToSim(candidateKeys, candidateKeyToDocIds, queryKeys, queryKeyToDocIds, docIdToMappingResult, queryColumnsCount)
 
     reportWithDuration(level = 1, s"Total ${topCandidateKeys.length} top candidate keys")
@@ -149,7 +150,8 @@ class TrexAlgorithm(indexReader: IndexReader,
                                   queryKeys: List[Option[String]],
                                   queryKeyToCandidateDocIds: Map[String, Set[Int]],
                                   docIdToMappingResult: Map[Int,MappingPipeResult],
-                                  clmnsCount: Int): List[String] = {
+                                  clmnsCount: Int,
+                                  topK: Int): List[String] = {
     val candidateKeyToQueryTableSim =
       candidateKeys.map { candidateKey =>
         val candidateKeyDocIds = candidateKeyToDocIds(candidateKey)
@@ -185,11 +187,19 @@ class TrexAlgorithm(indexReader: IndexReader,
       }
 
     val similarities = candidateKeyToQueryTableSim.toMap.map{ case (_, score) => score * 10 }.toList
-    val threshold = otsu.getThreshold(similarities) / 30
+    val topKeys = (if (topK > 0) {
+      candidateKeyToQueryTableSim
+        .sortBy { case (_, score) => score }
+        .reverse
+        .take(topK)
+    } else {
+      val threshold = otsu.getThreshold(similarities) / 30
 
-    candidateKeyToQueryTableSim
-      .filter { case (_, score) => score >= threshold }
-      .map { case (key, _) => key }
+      candidateKeyToQueryTableSim
+        .filter { case (_, score) => score >= threshold }
+    }).map { case (key, _) => key }
+
+    topKeys
   }
 
   private def getCandidateKeysToSim(candidateKeys: List[String],

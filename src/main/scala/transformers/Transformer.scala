@@ -51,9 +51,10 @@ class Transformer {
     val scoringMethod = MapScoring.withName(jsonConfig("scoring").str)
 
     val buffCols = jsonConfig("clmns_relations").arr map(_.arr.map(el => el.num.toInt).toList)
+    val maxK = jsonConfig("maxK").num.toInt
     val docIds = jsonConfig("doc_ids").arr.map(el => el.num.toInt).toList
 
-    AppConfig(task, queryRowsCount, clmnsCount, buffCols.toList, concept, docIds, scoringMethod)
+    AppConfig(task, queryRowsCount, clmnsCount, buffCols.toList, maxK, concept, docIds, scoringMethod)
 
   }
 

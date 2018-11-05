@@ -4,6 +4,7 @@ case class AppConfig(task: TaskFlow.Value,
                      queryRowsCount: Int,
                      columnsCount: Int,
                      columnsRelations: List[List[Int]],
+                     maxK: Int,
                      concept: String,
                      docIds: List[Int],
                      scoringMethod: MapScoring.Value)
