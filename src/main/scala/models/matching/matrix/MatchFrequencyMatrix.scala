@@ -21,7 +21,8 @@ case class AdjacentMatches(nPositive: Int, nPossible: Int)
 
 object AdjacentMatches {
 
-  def getWeight(adjacentMatches: AdjacentMatches): Double = adjacentMatches.nPositive / adjacentMatches.nPossible
+  def getWeight(adjacentMatches: AdjacentMatches): Double =
+    adjacentMatches.nPositive.toDouble / adjacentMatches.nPossible.toDouble
 
 }
 

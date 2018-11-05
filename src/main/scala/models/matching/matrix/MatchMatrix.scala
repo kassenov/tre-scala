@@ -60,8 +60,6 @@ object MatchMatrix {
                                   matchMatrix: MatchMatrix,
                                   frequencyMatrix: MatchFrequencyMatrix): List[Option[IdxWithScore]] = {
 
-    val candTblClmnIdxToOccurencePerColumn = MatchMatrix.getCandClmnIdxToOccurrenceMapByMatrix(matchMatrix)
-
     matchMatrix.columns.zipWithIndex
       .map { case(mtrxColumn, queryClmnIdx) =>
         val candClmnIdxToQueryRowIdxs = MatchingMatrixColumn.getCandClmnIdxToQueryRowIdxsMap(mtrxColumn)
@@ -69,15 +67,16 @@ object MatchMatrix {
         if (candClmnIdxToQueryRowIdxs.nonEmpty && candClmnIdxToQueryRowIdxs.exists(m => m._2.nonEmpty)) {
 
           val frequencyColumn = frequencyMatrix.columns(queryClmnIdx)
-          val totalPossibleWeight = tableMatch.keyMatches.map { keyMatch =>
+          val foundQueryKeysWeights = tableMatch.keyMatches.map { keyMatch =>
             AdjacentMatches.getWeight(frequencyColumn(keyMatch.queryRowIdx))
-          }.sum
+          }
+          val totalPossibleWeight = foundQueryKeysWeights.sum
 
           candClmnIdxToQueryRowIdxs.map { case (candClmnIdx, queryRowIdxs) =>
-              val weight = queryRowIdxs.map { queryRowIdx =>
-                AdjacentMatches.getWeight(frequencyColumn(queryRowIdx))
-              }.sum
-              candClmnIdx -> (weight, queryRowIdxs.length)
+            val weight = queryRowIdxs.map { queryRowIdx =>
+              AdjacentMatches.getWeight(frequencyColumn(queryRowIdx))
+            }.sum - totalPossibleWeight
+            candClmnIdx -> (weight, queryRowIdxs.length)
           }.maxBy {
             case (_, (weight, _)) => weight
           } match {
