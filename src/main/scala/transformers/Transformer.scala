@@ -1,7 +1,7 @@
 package transformers
 
 import models.Table
-import utls.{AppConfig, TaskFlow}
+import utls.{AppConfig, MapScoring, TaskFlow}
 
 class Transformer {
 
@@ -48,11 +48,12 @@ class Transformer {
     val concept = jsonConfig("concept").str
     val clmnsCount = jsonConfig("clmns_count").num.toInt
     val task = TaskFlow.withName(jsonConfig("task").str)
+    val scoringMethod = MapScoring.withName(jsonConfig("scoring").str)
 
     val buffCols = jsonConfig("clmns_relations").arr map(_.arr.map(el => el.num.toInt).toList)
     val docIds = jsonConfig("doc_ids").arr.map(el => el.num.toInt).toList
 
-    AppConfig(task, queryRowsCount, clmnsCount, buffCols.toList, concept, docIds)
+    AppConfig(task, queryRowsCount, clmnsCount, buffCols.toList, concept, docIds, scoringMethod)
 
   }
 

@@ -19,4 +19,10 @@ case class MatchFrequencyMatrix(columns: List[List[AdjacentMatches]])
 
 case class AdjacentMatches(nPositive: Int, nPossible: Int)
 
+object AdjacentMatches {
+
+  def getWeight(adjacentMatches: AdjacentMatches): Double = adjacentMatches.nPositive / adjacentMatches.nPossible
+
+}
+
 

@@ -63,7 +63,7 @@ object Main extends App {
       println("Start")
       val startTime = System.nanoTime
 
-      val algorithm = new TrexAlgorithm(reader, tableSearch, analyzer, s"$concept${configs.queryRowsCount}", tableColumnsRelations)
+      val algorithm = new TrexAlgorithm(reader, tableSearch, analyzer, s"$concept${configs.queryRowsCount}", tableColumnsRelations, configs.scoringMethod)
       val retrievedTable = algorithm.run(queryTable)
 
       val endTime = System.nanoTime

@@ -1,5 +1,7 @@
 package models.matching.matrix
 
+import models.matching.TableMatch
+
 /**
   * Match Matrix is a data structure that keeps matches of original table in another table using indexes
   * and simplifies extracting a mapping between those tables.
@@ -21,11 +23,13 @@ case class MatchMatrix(columns: List[MatchingMatrixColumn])
 object MatchMatrix {
 
   def getBestIdxPerColumnByCount(matrix: MatchMatrix): List[Option[IdxWithScore]] =
-    getIdxToOccurrenceMapByMatrix(matrix)
-      .map { columnIdxToOccurrenceMap =>
+    getCandClmnIdxToOccurrenceMapByMatrix(matrix)
+      .map { candClmnIdxToOccurrenceMap =>
 
-        if (columnIdxToOccurrenceMap.nonEmpty) {
-          columnIdxToOccurrenceMap.max match {
+        if (candClmnIdxToOccurrenceMap.nonEmpty) {
+          candClmnIdxToOccurrenceMap.maxBy{
+            case (_, occurrence) => occurrence
+          } match {
             case (idx, occurrence) => Some(IdxWithScore(idx, occurrence, occurrence))
           }
         } else {
@@ -33,10 +37,10 @@ object MatchMatrix {
         }
       }
 
-  def getIdxToOccurrenceMapByMatrix(matrix: MatchMatrix): List[Map[Int, Int]] =
+  def getCandClmnIdxToOccurrenceMapByMatrix(matrix: MatchMatrix): List[Map[Int, Int]] =
     matrix.columns
       .map { column =>
-        MatchingMatrixColumn.getIdxToOccurrenceMap(column)
+        MatchingMatrixColumn.getCandClmnIdxToOccurrenceMap(column)
       }
 
   def getOccurrenceOfIdxesInQueryRowIdx(matrix: MatchMatrix,
@@ -51,5 +55,40 @@ object MatchMatrix {
           case _                                                                            => 0
         }
       }
+
+  def getBestIdxPerColumnByWeight(tableMatch: TableMatch,
+                                  matchMatrix: MatchMatrix,
+                                  frequencyMatrix: MatchFrequencyMatrix): List[Option[IdxWithScore]] = {
+
+    val candTblClmnIdxToOccurencePerColumn = MatchMatrix.getCandClmnIdxToOccurrenceMapByMatrix(matchMatrix)
+
+    matchMatrix.columns.zipWithIndex
+      .map { case(mtrxColumn, queryClmnIdx) =>
+        val candClmnIdxToQueryRowIdxs = MatchingMatrixColumn.getCandClmnIdxToQueryRowIdxsMap(mtrxColumn)
+
+        if (candClmnIdxToQueryRowIdxs.nonEmpty && candClmnIdxToQueryRowIdxs.exists(m => m._2.nonEmpty)) {
+
+          val frequencyColumn = frequencyMatrix.columns(queryClmnIdx)
+          val totalPossibleWeight = tableMatch.keyMatches.map { keyMatch =>
+            AdjacentMatches.getWeight(frequencyColumn(keyMatch.queryRowIdx))
+          }.sum
+
+          candClmnIdxToQueryRowIdxs.map { case (candClmnIdx, queryRowIdxs) =>
+              val weight = queryRowIdxs.map { queryRowIdx =>
+                AdjacentMatches.getWeight(frequencyColumn(queryRowIdx))
+              }.sum
+              candClmnIdx -> (weight, queryRowIdxs.length)
+          }.maxBy {
+            case (_, (weight, _)) => weight
+          } match {
+            case (idx, (weight, occurrence)) => Some(IdxWithScore(idx, occurrence, weight))
+          }
+
+        } else {
+          None
+        }
+
+      }
+  }
 
 }

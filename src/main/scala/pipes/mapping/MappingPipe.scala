@@ -7,7 +7,7 @@ import models.{MappingPipeResult, Table}
 import pipes.filtering.{FilterTableByCandidateKeys, FilterTableBySize}
 import search.{KeySearcher, TableSearcher, ValueSearcher}
 import transformers.Transformer
-import utls.{CsvUtils, Serializer}
+import utls.{CsvUtils, MapScoring, Serializer}
 
 import scala.collection.parallel.CollectionConverters._
 import scala.collection.parallel.ParMap
@@ -17,7 +17,8 @@ class MappingPipe(keySearcher: KeySearcher,
                   tableSearcher: TableSearcher,
                   tableColumnsRelations: List[TableColumnsRelation],
                   queryTable: Table,
-                  dataName: String) {
+                  dataName: String,
+                  scoringMethod: MapScoring.Value) {
 
   private val serializer = new Serializer()
   private val transformer = new Transformer
@@ -27,7 +28,7 @@ class MappingPipe(keySearcher: KeySearcher,
   val tableMatchingExtractor = new TableMatchingExtractor(keySearcher, valueSearcher)
   val tableMatchMatrixExtractor = new TableMatchMatrixExtractor()
   val tableMatchFrequencyMatrixExtractor = new TableMatchFrequencyMatrixExtractor()
-  val tableMappingExtractor = new TableMappingExtractor()
+  val tableMappingExtractor = new TableMappingExtractor(scoringMethod)
   val tableCandidateKeysWithIndexesExtractor = new TableCandidateKeysWithIndexesExtractor()
 
   val excludeTables: List[String] = List.empty //List("Players - A to Z – UEFA.com")
@@ -100,7 +101,7 @@ class MappingPipe(keySearcher: KeySearcher,
 
     // ================ Mapping ==================
 
-    val mappingFileName = s"${dataName}_mapping"
+    val mappingFileName = s"${dataName}_mapping_$scoringMethod"
     val docIdToMapping = if (!reset && serializer.exists(mappingFileName)) {
       println(s"De-serializing mappings from file...")
       serializer.deserialize(mappingFileName).asInstanceOf[Map[Int,MappingPipeResult]]
@@ -170,7 +171,7 @@ class MappingPipe(keySearcher: KeySearcher,
 
   private def processMapping(tableMatch: TableMatch, matchMatrix: MatchMatrix, frequencyMatrix: MatchFrequencyMatrix): Option[MappingPipeResult] = {
 
-    val columnsMapping = tableMappingExtractor.extract(matchMatrix)
+    val columnsMapping = tableMappingExtractor.extract(tableMatch, matchMatrix, frequencyMatrix)
     val candidateKeysWithIndexes = tableCandidateKeysWithIndexesExtractor.extract(tableMatch.candidateTableKeys, tableMatch)
 
     Some(MappingPipeResult(columnsMapping, candidateKeysWithIndexes, tableMatch))

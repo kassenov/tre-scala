@@ -1,13 +1,14 @@
 package pipes.mapping
 
 import models.mapping.ColumnsMapping
-import models.matching.matrix.{IdxWithScore, MatchMatrix}
+import models.matching.TableMatch
+import models.matching.matrix.{IdxWithScore, MatchFrequencyMatrix, MatchMatrix}
 import models.score.{MappingScore, TableMappingScore}
 import utls.MapScoring
 
-class TableMappingExtractor(scoringMethod: MapScoring.Value = MapScoring.AdjacentMatchWeight) {
+class TableMappingExtractor(scoringMethod: MapScoring.Value) {
 
-  def extract(matchMatrix: MatchMatrix): ColumnsMapping = {
+  def extract(tableMatch: TableMatch, matchMatrix: MatchMatrix, frequencyMatrix: MatchFrequencyMatrix): ColumnsMapping = {
 
 //    if (!matchMatrix.columns.exists(c => c.cells.nonEmpty)) {
 //      val a = 1
@@ -15,6 +16,7 @@ class TableMappingExtractor(scoringMethod: MapScoring.Value = MapScoring.Adjacen
 
     val bestIdxPerColumn = scoringMethod match {
       case MapScoring.Simple => getBestIdxPerColumnBySimpleScoring(matchMatrix)
+      case MapScoring.AdjacentMatchWeight => getBestIdxPerColumnByAdjacentMatchWeight(tableMatch, matchMatrix, frequencyMatrix)
     }
 
     val columns = bestIdxPerColumn.map{
@@ -70,6 +72,19 @@ class TableMappingExtractor(scoringMethod: MapScoring.Value = MapScoring.Adjacen
       .map {
         case Some(idxWithOccurrence) if idxWithOccurrence.occurrence >= queryKeysCount / 2 => Some(idxWithOccurrence)
         case _                                                                             => None
+      }
+
+  }
+
+  def getBestIdxPerColumnByAdjacentMatchWeight(tableMatch: TableMatch,
+                                               matchMatrix: MatchMatrix,
+                                               frequencyMatrix: MatchFrequencyMatrix): List[Option[IdxWithScore]] = {
+
+    // Filtering out by columns mismatches fraction
+    MatchMatrix.getBestIdxPerColumnByWeight(tableMatch, matchMatrix, frequencyMatrix)
+      .map {
+        case Some(idxWithScore) if idxWithScore.weight > 0 => Some(idxWithScore)
+        case _                                             => None
       }
 
   }

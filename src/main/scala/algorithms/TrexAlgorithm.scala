@@ -12,7 +12,7 @@ import search.{KeySearcherWithSimilarity, TableSearcher, ValueSearcherWithSimila
 import statistics.LuceneIndexTermFrequencyProvider
 import thresholding.otsu
 import transformers.Transformer
-import utls.Serializer
+import utls.{MapScoring, Serializer}
 
 import scala.collection.mutable
 import scala.collection.parallel.CollectionConverters._
@@ -21,7 +21,8 @@ class TrexAlgorithm(indexReader: IndexReader,
                     tableSearcher: TableSearcher,
                     analyzer: Analyzer,
                     dataName: String,
-                    tableColumnsRelations: List[TableColumnsRelation]) extends Algorithm {
+                    tableColumnsRelations: List[TableColumnsRelation],
+                    scoringMethod: MapScoring.Value) extends Algorithm {
 
   private val transformer = new Transformer
   private val serializer = new Serializer()
@@ -45,7 +46,7 @@ class TrexAlgorithm(indexReader: IndexReader,
     // Mapping candidate tables
     println(s"===== Started searching for candidate tables =====")
 
-    val mappingPipe = new MappingPipe(keySearcher, valueSearcher, tableSearcher, tableColumnsRelations, queryTable, dataName)
+    val mappingPipe = new MappingPipe(keySearcher, valueSearcher, tableSearcher, tableColumnsRelations, queryTable, dataName, scoringMethod)
     val docIdToMappingResult = mappingPipe.deserializeOrFindAndMapByQueryKeysAndDataName()
 
     reportWithDuration(level = 1, s"Total ${docIdToMappingResult.toList.length} candidate tables")

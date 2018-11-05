@@ -5,7 +5,8 @@ case class AppConfig(task: TaskFlow.Value,
                      columnsCount: Int,
                      columnsRelations: List[List[Int]],
                      concept: String,
-                     docIds: List[Int])
+                     docIds: List[Int],
+                     scoringMethod: MapScoring.Value)
 
 object TaskFlow extends Enumeration {
   val Mapping, Evaluating, KeysAnalysis, Extracting = Value
