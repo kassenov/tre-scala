@@ -17,7 +17,7 @@ class TableMappingExtractor() {
 
     // Filtering out by columns mismatches fraction
     val bestIdxPerColumnAfterFilteringByColumns =
-      MatchMatrix.getBestIdxPerColumn(matchMatrix)
+      MatchMatrix.getBestIdxPerColumnByCount(matchMatrix)
         .map {
           case Some(idxWithOccurrence) if idxWithOccurrence.occurrence >= queryKeysCount / 2 => Some(idxWithOccurrence)
           case _                                                                             => None

@@ -15,6 +15,8 @@ package models.matching.matrix
   *
   * @param columns
   */
-case class MatchFrequencyMatrix(nPossible: Int, columns: List[List[Int]])
+case class MatchFrequencyMatrix(columns: List[List[AdjacentMatches]])
+
+case class AdjacentMatches(nPositive: Int, nPossible: Int)
 
 

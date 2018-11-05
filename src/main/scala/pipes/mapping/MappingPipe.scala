@@ -1,15 +1,15 @@
 package pipes.mapping
 
 import models.matching.TableMatch
-import models.matching.matrix.MatchMatrix
+import models.matching.matrix.{AdjacentMatches, MatchFrequencyMatrix, MatchMatrix}
 import models.relation.TableColumnsRelation
 import models.{MappingPipeResult, Table}
 import pipes.filtering.{FilterTableByCandidateKeys, FilterTableBySize}
 import search.{KeySearcher, TableSearcher, ValueSearcher}
 import transformers.Transformer
 import utls.{CsvUtils, Serializer}
-import scala.collection.parallel.CollectionConverters._
 
+import scala.collection.parallel.CollectionConverters._
 import scala.collection.parallel.ParMap
 
 class MappingPipe(keySearcher: KeySearcher,
@@ -26,6 +26,7 @@ class MappingPipe(keySearcher: KeySearcher,
 
   val tableMatchingExtractor = new TableMatchingExtractor(keySearcher, valueSearcher)
   val tableMatchMatrixExtractor = new TableMatchMatrixExtractor()
+  val tableMatchFrequencyMatrixExtractor = new TableMatchFrequencyMatrixExtractor()
   val tableMappingExtractor = new TableMappingExtractor()
   val tableCandidateKeysWithIndexesExtractor = new TableCandidateKeysWithIndexesExtractor()
 
@@ -82,6 +83,21 @@ class MappingPipe(keySearcher: KeySearcher,
       results
     }
 
+    // ================ Frequency ================
+
+    val totalFrequencyMatrix = docIdToMatrix.par.map { case (docId, matrix) =>
+      tableMatchFrequencyMatrixExtractor.extract(docIdToTableMatch(docId), matrix)
+    }.seq.reduceLeft { case (a, b) =>
+      val columns = a.columns.zipWithIndex.map { case (a_column, clmn_idx) =>
+        a_column.zipWithIndex.map { case (a_cell, row_idx) =>
+          val b_cell = b.columns(clmn_idx)(row_idx)
+          AdjacentMatches(a_cell.nPositive + b_cell.nPositive, a_cell.nPossible + b_cell.nPossible)
+        }
+      }
+
+      MatchFrequencyMatrix(columns)
+    }
+
     // ================ Mapping ==================
 
     val mappingFileName = s"${dataName}_mapping"
@@ -91,7 +107,7 @@ class MappingPipe(keySearcher: KeySearcher,
     } else {
 
       val results = (docIdToMatrix.par map { case (docId, matrix) =>
-        processMapping(docIdToTableMatch(docId), matrix) match {
+        processMapping(docIdToTableMatch(docId), matrix, totalFrequencyMatrix) match {
           case Some(mapping) =>
             val potentialKeysCount = mapping.candidateKeysWithIndexes.length
             if (potentialKeysCount > 0) {
@@ -152,7 +168,7 @@ class MappingPipe(keySearcher: KeySearcher,
 
   }
 
-  private def processMapping(tableMatch: TableMatch, matchMatrix: MatchMatrix): Option[MappingPipeResult] = {
+  private def processMapping(tableMatch: TableMatch, matchMatrix: MatchMatrix, frequencyMatrix: MatchFrequencyMatrix): Option[MappingPipeResult] = {
 
     val columnsMapping = tableMappingExtractor.extract(matchMatrix)
     val candidateKeysWithIndexes = tableCandidateKeysWithIndexesExtractor.extract(tableMatch.candidateTableKeys, tableMatch)
