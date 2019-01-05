@@ -1,0 +1,13 @@
+{
+  "query_rows_count": 10,
+  "concept": "countries",
+  "clmns_count": 3,
+  "task": "Evaluating",
+  "scoring": "Simple",
+  "maxK": 237,
+  "clmns_relations": [[0,1],[0,2]],
+  "doc_ids": [11407084, 34743165, 26448278, 37525376],
+  "pConcepts": ["countries"],
+  "pTasks": ["Mapping", "Evaluating", "KeysAnalysis", "Extracting"],
+  "pScorings": ["AdjacentMatchWeight", "Simple"]
+}
