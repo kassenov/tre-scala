@@ -186,6 +186,8 @@ class TrexAlgorithm(indexReader: IndexReader,
 
       }
 
+    val nonNan = candidateKeyToQueryTableSim.filter { case (_, score) => !score.isNaN }
+
     val similarities = candidateKeyToQueryTableSim.toMap.map{ case (_, score) => score * 10 }.toList
     val topKeys = (if (topK > 0) {
       candidateKeyToQueryTableSim

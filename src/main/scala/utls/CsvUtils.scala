@@ -13,6 +13,11 @@ class CsvUtils() {
 
   def exportTable(table: Table, name: String): Unit = {
     val file = new File(s"outputs/$name.csv")
+
+    if (file.exists()) {
+      file.delete()
+    }
+
     val csvWriter = new CsvWriter()
 
     val columnsCount = table.columns.length
