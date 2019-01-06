@@ -1,13 +1,13 @@
 {
   "query_rows_count": 10,
-  "concept": "countries",
-  "clmns_count": 3,
-  "task": "Evaluating",
+  "concept": "indolympics2008",
+  "clmns_count": 4,
+  "task": "ExtEvalPairWise",
   "scoring": "Simple",
   "maxK": 237,
   "clmns_relations": [[0,1],[0,2]],
   "doc_ids": [11407084, 34743165, 26448278, 37525376],
-  "ext_params": [""],
+  "ext_params": ["/media/light/SSD/50/MannheimSearchJoinsEngine/results/olympics_2008_gold_bronze_silver.csv"],
   "pConcepts": ["countries"],
   "pTasks": ["Mapping", "Evaluating", "KeysAnalysis", "Extracting", "ExtEvalPairWise"],
   "pScorings": ["AdjacentMatchWeight", "Simple"]

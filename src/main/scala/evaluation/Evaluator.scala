@@ -15,6 +15,8 @@ case class EvaluationValuesWithNM(clmnIdx: Int,
                                   evalScore: EvaluationScore,
                                   valueMatchesCountResult: ColumnsValuesMatchCountResult)
 
+case class EvalMaxMinMeanResult(max: EvaluationValuesWithNM, min: EvaluationValuesWithNM, mean: EvaluationValuesWithNM)
+
 case class NotFoundAndNotMatchedRecordsResult(nfRecs: List[List[Option[String]]],
                                               nmRecs: List[List[Option[String]]])
 
@@ -65,7 +67,7 @@ class Evaluator(groundTruthTable: Table,
     val notMatchRTKeyIdxs = List.range(0, evalKeyColumn.size).filterNot(idx => matchRTKeyIdxs.contains(idx)).map(i => (i, evalKeyColumn(i))).toList
 
     val notMatchedAndNotFoundRecords = getNotMatchedAndNotFoundRecords(evalResults, truthKeyColumn, evalKeyColumn)
-    
+
     val eval = EvaluationKeysWithNM(
       EvaluationResult(columnScores = keyScore :: evalResults.map(r => r.evalScore)),
       notFoundGTKeyIdxs,
@@ -98,11 +100,36 @@ class Evaluator(groundTruthTable: Table,
     val evalResults = List.range(1, clmnsCount).map { clmnIdx =>
       val truthColumn = groundTruthTable.columns(clmnIdx)
 
+      println(s"e: ${truthColumn.head.get}")
       // TODO: At the moment taking the max, but it might need alternation to have average and mean.
-      val valueMatchesCountResult = List.range(1, evalTable.columns.length).map { subClmnIdx =>
-        val evalColumn = evalTable.columns(clmnIdx)
-        calculateValuesMatchInColumns(keyTruthRowIdxToEvalRowIdx, truthColumn, evalColumn)
-      }.maxBy(r => r.matchValuesCount)
+      val headerToValueMatchesCountResultList = List.range(1, evalTable.columns.length).map { subClmnIdx =>
+        val evalColumn = evalTable.columns(subClmnIdx)
+        val result = calculateValuesMatchInColumns(keyTruthRowIdxToEvalRowIdx, truthColumn, evalColumn)
+        evalColumn.head -> result
+      }
+
+      // ALL Max, Min, Mean and Avg
+      val allValueMatchesCountResults = headerToValueMatchesCountResultList.map(_._2)
+      val allMaxMinMeanResult = getMaxMinMeanResult(allValueMatchesCountResults, clmnIdx, matchKeysCount)
+
+      println(s"ALL total ${allValueMatchesCountResults.length}")
+      println(s"ALL MAX ${allMaxMinMeanResult.max.evalScore}")
+      println(s"ALL MIN ${allMaxMinMeanResult.min.evalScore}")
+      println(s"ALL MEAN ${allMaxMinMeanResult.mean.evalScore}\n")
+
+      // ByHeader Max, Min, Mean and Avg
+      val hdrValueMatchesCountResults = headerToValueMatchesCountResultList.filter(_._1.isDefined).filter(_._1.get.toLowerCase.contains(truthColumn.head.get.toLowerCase)).map(_._2)
+      if (hdrValueMatchesCountResults.nonEmpty) {
+        val hdrMaxMinMeanResult = getMaxMinMeanResult(hdrValueMatchesCountResults, clmnIdx, matchKeysCount)
+
+        println(s"HDR total ${hdrValueMatchesCountResults.length}")
+        println(s"HDR MAX ${hdrMaxMinMeanResult.max.evalScore}")
+        println(s"HDR MIN ${hdrMaxMinMeanResult.min.evalScore}")
+        println(s"HDR MEAN ${hdrMaxMinMeanResult.mean.evalScore}\n")
+      }
+
+      // ALL MAX
+      val valueMatchesCountResult = allMaxMinMeanResult.max.valueMatchesCountResult
 
       val precision = calculatePrecision(valueMatchesCountResult.matchValuesCount, matchKeysCount)//retrievedTotalRowsCount)
       val recall = calculateRecall(valueMatchesCountResult.matchValuesCount, matchKeysCount) //truthTotalRowsCount)
@@ -128,6 +155,37 @@ class Evaluator(groundTruthTable: Table,
 
     eval.result
 
+  }
+
+  private def getMaxMinMeanResult(valueMatchesCountResults: List[ColumnsValuesMatchCountResult],
+                                  clmnIdx: Int,
+                                  matchKeysCount: Int): EvalMaxMinMeanResult  = {
+    // Max
+    val maxValueMatchesCountResult = valueMatchesCountResults.maxBy(r => r.matchValuesCount)
+    val max = getEvalValuesWithNM(maxValueMatchesCountResult, clmnIdx, matchKeysCount)
+
+    // Min
+
+    val minValueMatchesCountResult = valueMatchesCountResults.minBy(r => r.matchValuesCount)
+    val min = getEvalValuesWithNM(minValueMatchesCountResult, clmnIdx, matchKeysCount)
+
+    // Mean
+    val sumC = valueMatchesCountResults.map(_.matchValuesCount).sum
+    val meanC = sumC.toDouble / valueMatchesCountResults.length.toDouble
+    val meanValueMatchesCountResult = ColumnsValuesMatchCountResult(matchValuesCount = meanC.toInt, nfIdxs = List.empty, nmIdxs = List.empty)
+    val mean = getEvalValuesWithNM(meanValueMatchesCountResult, clmnIdx, matchKeysCount)
+
+    EvalMaxMinMeanResult(max, min, mean)
+
+  }
+
+  private def getEvalValuesWithNM(valueMatchesCountResult: ColumnsValuesMatchCountResult,
+                                  clmnIdx: Int,
+                                  matchKeysCount: Int): EvaluationValuesWithNM = {
+    val precision = calculatePrecision(valueMatchesCountResult.matchValuesCount, matchKeysCount)
+    val recall = calculateRecall(valueMatchesCountResult.matchValuesCount, matchKeysCount)
+
+    EvaluationValuesWithNM(clmnIdx, EvaluationScore(precision, recall), valueMatchesCountResult)
   }
 
   private def getKeyTruthRowIdxToEvalRowIdx(truthKeyColumn: List[Option[String]],
@@ -181,7 +239,7 @@ class Evaluator(groundTruthTable: Table,
 
     val notFoundGTValueIdxs = valueTruthRowIdxToEvalRowIdx.filterNot(m => m._2.isDefined).keys.map(i => (i, truthColumn(i))).toList
     val matchRTValueIdxs = valueTruthRowIdxToEvalRowIdx.values.flatten.toList
-    val notMatchRTValueIdxs = List.range(0, evalColumn.size).filterNot(idx => matchRTValueIdxs.contains(idx)).map(i => (i, truthColumn(i)))
+    val notMatchRTValueIdxs = List.range(0, truthColumn.size).filterNot(idx => matchRTValueIdxs.contains(idx)).map(i => (i, truthColumn(i)))
 
     val matchValuesCount = valueTruthRowIdxToEvalRowIdx.flatMap(m => m._2).toSet.size//.flatten.distinct.length
 

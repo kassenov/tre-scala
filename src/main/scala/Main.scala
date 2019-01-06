@@ -50,7 +50,7 @@ object Main extends App {
   //====================================================
 
   val docsNum = reader.numDocs()
-  print(docsNum)
+  println(docsNum)
 
   configs.task match {
     case TaskFlow.Mapping =>
@@ -114,8 +114,8 @@ object Main extends App {
 
       val evaluator = new Evaluator(groundTruthTable, keySearcher, valueSearcher, s"$concept${configs.queryRowsCount}")
 
-      val evalResults = evaluator.evaluate(retrievedTable)
-      println(s"Evals: $evalResults")
+      val evalResults = evaluator.evaluateMaxPairwise(retrievedTable)
+      println(s"ExtEvals: $evalResults")
 
     case TaskFlow.KeysAnalysis =>
 

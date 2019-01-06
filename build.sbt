@@ -11,7 +11,7 @@
 scalaVersion := "2.13.0-M3"
 
 name := "tre-scala"
-organization := "ca.uofa.scala"
+organization := "ca.uofa.tre"
 version := "1.0"
 
 libraryDependencies += "org.scala-lang" % "scala-library" % "2.13.0-M3"
