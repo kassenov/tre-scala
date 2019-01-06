@@ -7,10 +7,11 @@ case class AppConfig(task: TaskFlow.Value,
                      maxK: Int,
                      concept: String,
                      docIds: List[Int],
-                     scoringMethod: MapScoring.Value)
+                     scoringMethod: MapScoring.Value,
+                     extParams: List[String])
 
 object TaskFlow extends Enumeration {
-  val Mapping, Evaluating, KeysAnalysis, Extracting = Value
+  val Mapping, Evaluating, KeysAnalysis, Extracting, ExtEvalPairWise = Value
 }
 
 object MapScoring extends Enumeration {

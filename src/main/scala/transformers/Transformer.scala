@@ -53,8 +53,9 @@ class Transformer {
     val buffCols = jsonConfig("clmns_relations").arr map(_.arr.map(el => el.num.toInt).toList)
     val maxK = jsonConfig("maxK").num.toInt
     val docIds = jsonConfig("doc_ids").arr.map(el => el.num.toInt).toList
+    val extParams = jsonConfig("ext_params").arr.map(el => el.str).toList
 
-    AppConfig(task, queryRowsCount, clmnsCount, buffCols.toList, maxK, concept, docIds, scoringMethod)
+    AppConfig(task, queryRowsCount, clmnsCount, buffCols.toList, maxK, concept, docIds, scoringMethod, extParams)
 
   }
 

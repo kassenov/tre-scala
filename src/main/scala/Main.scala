@@ -45,7 +45,7 @@ object Main extends App {
 
   //====================================================
   val csvUtils = new CsvUtils()
-  val groundTruthTable = csvUtils.importTable(name = s"truth_$concept", configs.columnsCount, hdrRowIdx = Some(0))
+  val groundTruthTable = csvUtils.importTableByName(name = s"truth_$concept", configs.columnsCount, hdrRowIdx = Some(0))
 
   //====================================================
 
@@ -75,8 +75,8 @@ object Main extends App {
 
     case TaskFlow.Evaluating =>
 
-      val queryTable1 = csvUtils.importTable(name = s"query_$concept${configs.queryRowsCount}", configs.columnsCount, hdrRowIdx = Some(0))
-      val retrievedTable1 = csvUtils.importTable(name = s"retrieved_$concept${configs.queryRowsCount}", configs.columnsCount, hdrRowIdx = Some(0))
+      val queryTable1 = csvUtils.importTableByName(name = s"query_$concept${configs.queryRowsCount}", configs.columnsCount, hdrRowIdx = Some(0))
+      val retrievedTable1 = csvUtils.importTableByName(name = s"retrieved_$concept${configs.queryRowsCount}", configs.columnsCount, hdrRowIdx = Some(0))
 
       val entitiesTermFrequencyProvider = new LuceneIndexTermFrequencyProvider(reader, IndexFields.entities)
       val keySearcher = new KeySearcherWithSimilarity(entitiesTermFrequencyProvider, analyzer)
@@ -99,6 +99,22 @@ object Main extends App {
       )
 
       val evalResults = evaluator.evaluate(evalTable)
+      println(s"Evals: $evalResults")
+
+    case TaskFlow.ExtEvalPairWise =>
+
+      val retrievedTablePath = configs.extParams.head
+      val retrievedTable = csvUtils.importTableByPath(retrievedTablePath, hdrRowIdx = Some(0))
+
+      val entitiesTermFrequencyProvider = new LuceneIndexTermFrequencyProvider(reader, IndexFields.entities)
+      val keySearcher = new KeySearcherWithSimilarity(entitiesTermFrequencyProvider, analyzer)
+
+      val contentTermFrequencyProvider = new LuceneIndexTermFrequencyProvider(reader, IndexFields.content)
+      val valueSearcher = new ValueSearcherWithSimilarity(contentTermFrequencyProvider, analyzer)
+
+      val evaluator = new Evaluator(groundTruthTable, keySearcher, valueSearcher, s"$concept${configs.queryRowsCount}")
+
+      val evalResults = evaluator.evaluate(retrievedTable)
       println(s"Evals: $evalResults")
 
     case TaskFlow.KeysAnalysis =>

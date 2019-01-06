@@ -79,11 +79,56 @@ class Evaluator(groundTruthTable: Table,
 
   }
 
-//  def evaluateMaxPairwise(evalTable: Table): EvaluationResult = {
-//
-//
-//
-//  }
+  def evaluateMaxPairwise(evalTable: Table): EvaluationResult = {
+
+    val retrievedTotalRowsCount = evalTable.columns.head.length
+    val truthTotalRowsCount = groundTruthTable.columns.head.length
+
+    val truthKeyColumn = Table.getKeys(groundTruthTable)
+    val evalKeyColumn = Table.getKeys(evalTable)
+
+    val keyTruthRowIdxToEvalRowIdx = getKeyTruthRowIdxToEvalRowIdx(truthKeyColumn, evalKeyColumn)
+
+    val matchKeysCount = keyTruthRowIdxToEvalRowIdx.flatMap(m => m._2).toSet.size
+
+    val keyPrecision = calculatePrecision(matchKeysCount, retrievedTotalRowsCount)
+    val keyRecall = calculateRecall(matchKeysCount, truthTotalRowsCount)
+    val keyScore = EvaluationScore(keyPrecision, keyRecall)
+
+    val evalResults = List.range(1, clmnsCount).map { clmnIdx =>
+      val truthColumn = groundTruthTable.columns(clmnIdx)
+
+      // TODO: At the moment taking the max, but it might need alternation to have average and mean.
+      val valueMatchesCountResult = List.range(1, evalTable.columns.length).map { subClmnIdx =>
+        val evalColumn = evalTable.columns(clmnIdx)
+        calculateValuesMatchInColumns(keyTruthRowIdxToEvalRowIdx, truthColumn, evalColumn)
+      }.maxBy(r => r.matchValuesCount)
+
+      val precision = calculatePrecision(valueMatchesCountResult.matchValuesCount, matchKeysCount)//retrievedTotalRowsCount)
+      val recall = calculateRecall(valueMatchesCountResult.matchValuesCount, matchKeysCount) //truthTotalRowsCount)
+
+      EvaluationValuesWithNM(clmnIdx, EvaluationScore(precision, recall), valueMatchesCountResult)
+
+    }
+
+    val notFoundGTKeyIdxs = keyTruthRowIdxToEvalRowIdx.filterNot(m => m._2.isDefined).keys.map(i => (i, truthKeyColumn(i))).toList
+    val matchRTKeyIdxs = keyTruthRowIdxToEvalRowIdx.values.flatten.toList
+    val notMatchRTKeyIdxs = List.range(0, evalKeyColumn.size).filterNot(idx => matchRTKeyIdxs.contains(idx)).map(i => (i, evalKeyColumn(i))).toList
+
+    val notMatchedAndNotFoundRecords = getNotMatchedAndNotFoundRecords(evalResults, truthKeyColumn, evalKeyColumn)
+
+    val eval = EvaluationKeysWithNM(
+      EvaluationResult(columnScores = keyScore :: evalResults.map(r => r.evalScore)),
+      notFoundGTKeyIdxs,
+      notMatchRTKeyIdxs,
+      notMatchedAndNotFoundRecords
+    )
+
+    serializer.saveAsJson(eval, s"${dataName}_EvalsData")
+
+    eval.result
+
+  }
 
   private def getKeyTruthRowIdxToEvalRowIdx(truthKeyColumn: List[Option[String]],
                                             evalKeyColumn: List[Option[String]]): Map[Int, Option[Int]] = {

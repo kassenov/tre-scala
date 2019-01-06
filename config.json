@@ -7,7 +7,8 @@
   "maxK": 237,
   "clmns_relations": [[0,1],[0,2]],
   "doc_ids": [11407084, 34743165, 26448278, 37525376],
+  "ext_params": [""],
   "pConcepts": ["countries"],
-  "pTasks": ["Mapping", "Evaluating", "KeysAnalysis", "Extracting"],
+  "pTasks": ["Mapping", "Evaluating", "KeysAnalysis", "Extracting", "ExtEvalPairWise"],
   "pScorings": ["AdjacentMatchWeight", "Simple"]
 }

@@ -46,7 +46,7 @@ class CsvUtils() {
     } finally if (csvAppender != null) csvAppender.close()
   }
 
-  def importTable(name: String, clmnsCount: Int, hdrRowIdx: Option[Int]): Table = {
+  def importTableByName(name: String, clmnsCount: Int, hdrRowIdx: Option[Int]): Table = {
     val file = new File(s"outputs/$name.csv")
     val csvReader = new CsvReader()
 
@@ -69,7 +69,37 @@ class CsvUtils() {
       hdrIdx = hdrRowIdx,
       columns = records.toList.transpose
     )
+  }
 
+  def importTableByPath(path: String, hdrRowIdx: Option[Int]): Table = {
+    val file = new File(path)
+    val csvReader = new CsvReader()
+
+    val csvParser = csvReader.parse(file, StandardCharsets.UTF_8)
+    var clmnsCount = 1
+    var firstRow = true
+
+    val records = Iterator.continually(csvParser.nextRow()).takeWhile(_ != null) map { row =>
+      if (firstRow) {
+        clmnsCount = row.getFieldCount
+        firstRow = false
+      }
+      List.range(0, clmnsCount).map { clmnIdx =>
+        Try(row.getField(clmnIdx)) match {
+          case Success(f) => Some(f)
+          case Failure(ex) => None
+        }
+      }
+    }
+
+    Table(
+      docId = -1,
+      title = "test",
+      url = "no",
+      keyIdx = Some(0),
+      hdrIdx = hdrRowIdx,
+      columns = records.toList.transpose
+    )
   }
 
 }
