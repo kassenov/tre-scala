@@ -15,11 +15,13 @@ case class EvaluationValuesWithNM(clmnIdx: Int,
                                   evalScore: EvaluationScore,
                                   valueMatchesCountResult: ColumnsValuesMatchCountResult)
 
+case class NotFoundAndNotMatchedRecordsResult(nfRecs: List[List[Option[String]]],
+                                              nmRecs: List[List[Option[String]]])
+
 case class EvaluationKeysWithNM(result: EvaluationResult,
                                 nfIdxs: List[(Int, Option[String])],
                                 nmIdxs: List[(Int, Option[String])],
-                                nfRecs: List[List[Option[String]]],
-                                nmRecs: List[List[Option[String]]])
+                                notFoundAndNotMatchedRecordsResult: NotFoundAndNotMatchedRecordsResult)
 
 class Evaluator(groundTruthTable: Table,
                 keySearch: KeySearcher,
@@ -34,10 +36,10 @@ class Evaluator(groundTruthTable: Table,
     val retrievedTotalRowsCount = evalTable.columns.head.length
     val truthTotalRowsCount = groundTruthTable.columns.head.length
 
-    val groundTruthKeysColumn = Table.getKeys(groundTruthTable)
-    val evalTableKeysColumn = Table.getKeys(evalTable)
+    val truthKeyColumn = Table.getKeys(groundTruthTable)
+    val evalKeyColumn = Table.getKeys(evalTable)
 
-    val keyTruthRowIdxToEvalRowIdx = getKeyTruthRowIdxToEvalRowIdx(groundTruthKeysColumn, evalTableKeysColumn)
+    val keyTruthRowIdxToEvalRowIdx = getKeyTruthRowIdxToEvalRowIdx(truthKeyColumn, evalKeyColumn)
 
     val matchKeysCount = keyTruthRowIdxToEvalRowIdx.flatMap(m => m._2).toSet.size
 
@@ -45,68 +47,30 @@ class Evaluator(groundTruthTable: Table,
     val keyRecall = calculateRecall(matchKeysCount, truthTotalRowsCount)
     val keyScore = EvaluationScore(keyPrecision, keyRecall)
 
-    val results = List.range(1, clmnsCount).map { clmnIdx =>
+    val evalResults = List.range(1, clmnsCount).map { clmnIdx =>
       val truthColumn = groundTruthTable.columns(clmnIdx)
       val evalColumn = evalTable.columns(clmnIdx)
 
       val valueMatchesCountResult = calculateValuesMatchInColumns(keyTruthRowIdxToEvalRowIdx, truthColumn, evalColumn)
 
       val precision = calculatePrecision(valueMatchesCountResult.matchValuesCount, matchKeysCount)//retrievedTotalRowsCount)
-    val recall = calculateRecall(valueMatchesCountResult.matchValuesCount, matchKeysCount) //truthTotalRowsCount)
+      val recall = calculateRecall(valueMatchesCountResult.matchValuesCount, matchKeysCount) //truthTotalRowsCount)
 
       EvaluationValuesWithNM(clmnIdx, EvaluationScore(precision, recall), valueMatchesCountResult)
 
     }
 
-    val notFoundGTKeyIdxs = keyTruthRowIdxToEvalRowIdx.filterNot(m => m._2.isDefined).keys.map(i => (i, groundTruthKeysColumn(i))).toList
+    val notFoundGTKeyIdxs = keyTruthRowIdxToEvalRowIdx.filterNot(m => m._2.isDefined).keys.map(i => (i, truthKeyColumn(i))).toList
     val matchRTKeyIdxs = keyTruthRowIdxToEvalRowIdx.values.flatten.toList
-    val notMatchRTKeyIdxs = List.range(0, evalTableKeysColumn.size).filterNot(idx => matchRTKeyIdxs.contains(idx)).map(i => (i, evalTableKeysColumn(i))).toList
+    val notMatchRTKeyIdxs = List.range(0, evalKeyColumn.size).filterNot(idx => matchRTKeyIdxs.contains(idx)).map(i => (i, evalKeyColumn(i))).toList
 
-    val nfRowIdxToRecord = mutable.Map[Int, mutable.Map[Int, Option[String]]]()
-    val nmRowIdxToRecord = mutable.Map[Int, mutable.Map[Int, Option[String]]]()
-
-    results.foreach { result =>
-      result.valueMatchesCountResult.nfIdxs.foreach { case (rowIdx, value) =>
-        if (!nfRowIdxToRecord.contains(rowIdx)) {
-          nfRowIdxToRecord += rowIdx -> mutable.Map[Int, Option[String]](0 -> groundTruthKeysColumn(rowIdx))
-        }
-        nfRowIdxToRecord(rowIdx) += result.clmnIdx -> value
-      }
-
-      result.valueMatchesCountResult.nmIdxs.foreach { case (rowIdx, value) =>
-        if (!nmRowIdxToRecord.contains(rowIdx)) {
-          nmRowIdxToRecord += rowIdx -> mutable.Map[Int, Option[String]](0 -> evalTableKeysColumn(rowIdx))
-        }
-        nmRowIdxToRecord(rowIdx) += result.clmnIdx -> value
-      }
-    }
-
-    val nfRecords = nfRowIdxToRecord.map { case (rowIdx, clmnIdxToValue) =>
-      List.range(0, clmnsCount).map { clmnIdx =>
-        if (clmnIdxToValue.contains(clmnIdx)) {
-          clmnIdxToValue(clmnIdx)
-        } else {
-          Some("-match-")
-        }
-      }
-    }.toList
-
-    val nmRecords = nmRowIdxToRecord.map { case (rowIdx, clmnIdxToValue) =>
-      List.range(0, clmnsCount).map { clmnIdx =>
-        if (clmnIdxToValue.contains(clmnIdx)) {
-          clmnIdxToValue(clmnIdx)
-        } else {
-          Some("-match-")
-        }
-      }
-    }.toList
-
+    val notMatchedAndNotFoundRecords = getNotMatchedAndNotFoundRecords(evalResults, truthKeyColumn, evalKeyColumn)
+    
     val eval = EvaluationKeysWithNM(
-      EvaluationResult(columnScores = keyScore :: results.map(r => r.evalScore)),
+      EvaluationResult(columnScores = keyScore :: evalResults.map(r => r.evalScore)),
       notFoundGTKeyIdxs,
       notMatchRTKeyIdxs,
-      nfRecords,
-      nmRecords
+      notMatchedAndNotFoundRecords
     )
 
     serializer.saveAsJson(eval, s"${dataName}_EvalsData")
@@ -177,6 +141,52 @@ class Evaluator(groundTruthTable: Table,
     val matchValuesCount = valueTruthRowIdxToEvalRowIdx.flatMap(m => m._2).toSet.size//.flatten.distinct.length
 
     ColumnsValuesMatchCountResult(matchValuesCount, notFoundGTValueIdxs, notMatchRTValueIdxs)
+  }
+
+  private def getNotMatchedAndNotFoundRecords(evalResults: List[EvaluationValuesWithNM],
+                                              truthKeyColumn: List[Option[String]],
+                                              evalKeyColumn: List[Option[String]]): NotFoundAndNotMatchedRecordsResult = {
+    val nfRowIdxToRecord = mutable.Map[Int, mutable.Map[Int, Option[String]]]()
+    val nmRowIdxToRecord = mutable.Map[Int, mutable.Map[Int, Option[String]]]()
+
+    evalResults.foreach { result =>
+      result.valueMatchesCountResult.nfIdxs.foreach { case (rowIdx, value) =>
+        if (!nfRowIdxToRecord.contains(rowIdx)) {
+          nfRowIdxToRecord += rowIdx -> mutable.Map[Int, Option[String]](0 -> truthKeyColumn(rowIdx))
+        }
+        nfRowIdxToRecord(rowIdx) += result.clmnIdx -> value
+      }
+
+      result.valueMatchesCountResult.nmIdxs.foreach { case (rowIdx, value) =>
+        if (!nmRowIdxToRecord.contains(rowIdx)) {
+          nmRowIdxToRecord += rowIdx -> mutable.Map[Int, Option[String]](0 -> evalKeyColumn(rowIdx))
+        }
+        nmRowIdxToRecord(rowIdx) += result.clmnIdx -> value
+      }
+    }
+
+    val nfRecords = nfRowIdxToRecord.map { case (rowIdx, clmnIdxToValue) =>
+      List.range(0, clmnsCount).map { clmnIdx =>
+        if (clmnIdxToValue.contains(clmnIdx)) {
+          clmnIdxToValue(clmnIdx)
+        } else {
+          Some("-match-")
+        }
+      }
+    }.toList
+
+    val nmRecords = nmRowIdxToRecord.map { case (rowIdx, clmnIdxToValue) =>
+      List.range(0, clmnsCount).map { clmnIdx =>
+        if (clmnIdxToValue.contains(clmnIdx)) {
+          clmnIdxToValue(clmnIdx)
+        } else {
+          Some("-match-")
+        }
+      }
+    }.toList
+
+    NotFoundAndNotMatchedRecordsResult(nfRecords, nmRecords)
+
   }
 
   private def calculatePrecision(matchCount: Int, retrievedCount: Int): Double =
