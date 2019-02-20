@@ -37,7 +37,8 @@ object Main extends App {
 //  val clmnsCount = 6
 //  val concept = s"olympic2008_$clmnsCount"
 
-  val sourceIndex = new SimpleFSDirectory(new File(rootPath + "/lucene-indexes/full-keys-to-raw-lidx").toPath)
+//  val sourceIndex = new SimpleFSDirectory(new File(rootPath + "/lucene-indexes/full-keys-to-raw-lidx").toPath)
+  val sourceIndex = new SimpleFSDirectory(new File(rootPath + "/lucene-indexes/6mln-keys-to-row-lidx").toPath)
   val reader = DirectoryReader.open(sourceIndex)
   val searcher = new IndexSearcher(reader)
   var tableSearch = new LuceneTableSearcher(searcher)
