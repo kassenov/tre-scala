@@ -2,7 +2,7 @@ import java.io.File
 import java.util.concurrent.TimeUnit
 
 import algorithms.TrexAlgorithm
-import evaluation.KeysAnalysis
+import evaluation.query.QueryTableEvaluator
 import evaluation.result.{Evaluator, KeysAnalysis}
 import models.Table
 import models.index.IndexFields
@@ -74,6 +74,23 @@ object Main extends App {
 
       csvUtils.exportTable(queryTable, s"query_$concept${configs.queryRowsCount}")
       csvUtils.exportTable(retrievedTable, s"retrieved_$concept${configs.queryRowsCount}")
+
+    case TaskFlow.QueryTableEval =>
+
+      val queryTableColumns = Table.getColumnsWithRandomRows(count=configs.queryRowsCount, groundTruthTable, shuffle = false)
+      val queryTable = new Table(docId = 0,"Query", "None", keyIdx = Some(0), hdrIdx = Some(0), columns = queryTableColumns)
+
+      val tableColumnsRelations = configs.columnsRelations.map(rel => TableColumnsRelation(rel))
+
+      println("Start")
+      val startTime = System.nanoTime
+
+      val algorithm = new QueryTableEvaluator(reader, tableSearch, analyzer, s"$concept${configs.queryRowsCount}", tableColumnsRelations, configs.scoringMethod, configs.maxK)
+      val retrievedTable = algorithm.run(queryTable)
+
+      val endTime = System.nanoTime
+      val duration = TimeUnit.NANOSECONDS.toSeconds(endTime - startTime)
+      println(s"Finished indexing for $concept. Total found ${retrievedTable.columns.head.length} in $duration seconds")
 
     case TaskFlow.Evaluating =>
 

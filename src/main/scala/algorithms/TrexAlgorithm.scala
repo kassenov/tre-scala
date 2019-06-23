@@ -6,7 +6,6 @@ import models.relation.TableColumnsRelation
 import models.selection.{CellValue, ColumnCellValues, KeyColumnsValuesModel}
 import org.apache.lucene.analysis.Analyzer
 import org.apache.lucene.index.IndexReader
-import pipes.filtering._
 import pipes.mapping._
 import search.{KeySearcherWithSimilarity, TableSearcher, ValueSearcherWithSimilarity}
 import statistics.LuceneIndexTermFrequencyProvider
@@ -23,7 +22,7 @@ class TrexAlgorithm(indexReader: IndexReader,
                     dataName: String,
                     tableColumnsRelations: List[TableColumnsRelation],
                     scoringMethod: MapScoring.Value,
-                    topK: Int) extends Algorithm {
+                    topK: Int) extends Algorithm with Timing {
 
   private val transformer = new Transformer
   private val serializer = new Serializer()
