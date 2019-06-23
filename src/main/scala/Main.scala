@@ -2,7 +2,8 @@ import java.io.File
 import java.util.concurrent.TimeUnit
 
 import algorithms.TrexAlgorithm
-import evaluation.{Evaluator, KeysAnalysis}
+import evaluation.KeysAnalysis
+import evaluation.result.{Evaluator, KeysAnalysis}
 import models.Table
 import models.index.IndexFields
 import models.relation.TableColumnsRelation

@@ -1,4 +1,4 @@
-package evaluation
+package evaluation.result
 
 import models.Table
 import search.{KeySearcher, ValueSearcher}

@@ -1,14 +1,12 @@
-package evaluation
+package evaluation.result
 
 import java.io.StringReader
 
 import models.Table
-import models.index.IndexFields
 import org.apache.lucene.analysis.Analyzer
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute
-import org.apache.lucene.index.{IndexReader, Term}
 import org.apache.lucene.search.IndexSearcher
-import search.{LuceneTableSearcher, TableSearcher}
+import search.LuceneTableSearcher
 import utls.CsvUtils
 
 import scala.collection.mutable
