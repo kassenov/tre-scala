@@ -80,7 +80,18 @@ class QueryTableEvaluator(indexReader: IndexReader,
     reportWithDuration(level = 1, s"Total ${candidateKeys.length} top candidate keys")
 
     // Value
-    println(s"===== Started selecting values for candidate keys =====")
+    println(s"===== Counts =====")
+
+    val idxToNtoTblsCountMap = getTblsCount(candidateKeys, candidateKeyToDocIds, docIdToMappingResult, queryColumnsCount)
+    idxToNtoTblsCountMap.foreach { case (clmnIdx, nToAMap) =>
+      println(s"--- clmn idx $clmnIdx ---")
+
+      nToAMap.foreach { case (n, c) =>
+        println(s"n $n sum $c")
+      }
+    }
+
+    println(s"===== Entropy =====")
 
     val idxToNtoAMap = getAs(candidateKeys, candidateKeyToDocIds, docIdToMappingResult, queryColumnsCount)
 
@@ -88,7 +99,6 @@ class QueryTableEvaluator(indexReader: IndexReader,
       println(s"--- clmn idx $clmnIdx ---")
 
       nToAMap.foreach { case (n, a) =>
-
         val total = a.length
         val pairs = a.map { r =>
           (r.key, r.value)
@@ -108,6 +118,30 @@ class QueryTableEvaluator(indexReader: IndexReader,
         }
         println(s"n $n sum ${-p.sum}")
       }
+
+      //--------------------------------------------------
+
+      val allA = nToAMap.flatMap { case (_, a) => a }.toList
+
+      val total = allA.length
+      val pairs = allA.map { r =>
+        (r.key, r.value)
+      }.toSet
+
+      val relFreqs = pairs.toList.map { pair =>
+        val numOfPairs = allA.count { r =>
+          r.key == pair._1 && r.value == pair._2
+        }
+        numOfPairs.toDouble / total.toDouble
+      }
+
+      val p = relFreqs.map { relFreq =>
+        val log2b = log2(relFreq)
+        val log10b = scala.math.log(relFreq)
+        relFreq * log2b
+      }
+      println(s"Total sum ${-p.sum}")
+
     }
 
     queryTable
@@ -162,7 +196,7 @@ class QueryTableEvaluator(indexReader: IndexReader,
                     docIdToMappingResult: Map[Int,MappingPipeResult],
                     clmnsCount: Int): Map[Int, Map[Int, List[rec]]] =
 
-    List.range(1, clmnsCount).map { queryClmIdx =>
+    List.range(0, clmnsCount).map { queryClmIdx =>
       val nToRecsMap = mutable.Map[Int, mutable.ListBuffer[rec]]()
       keys.par.foreach { key =>
         val docIds = keyToDocIds(key)
@@ -189,6 +223,44 @@ class QueryTableEvaluator(indexReader: IndexReader,
 
       val a = nToRecsMap.map { case (n, recs) =>
         (n, recs.toList)
+      }.toMap
+
+      (queryClmIdx, a)
+
+    }.toMap
+
+  private def getTblsCount(keys: List[String],
+                           keyToDocIds: Map[String, Set[Int]],
+                           docIdToMappingResult: Map[Int,MappingPipeResult],
+                           clmnsCount: Int): Map[Int, Map[Int, Int]] =
+
+    List.range(0, clmnsCount).map { queryClmIdx =>
+      val nToRecsMap = mutable.Map[Int, Int]()
+      keys.par.foreach { key =>
+        val docIds = keyToDocIds(key)
+
+        docIds.foreach { docId =>
+          val mappingResult = docIdToMappingResult(docId)
+          val rowIdx = mappingResult.candidateKeysWithIndexes.find(c => c.value == key).get.idx
+
+          val jsonTable = tableSearcher.getRawJsonTableByDocId(docId)
+          val table = transformer.rawJsonToTable(docId, jsonTable)
+          mappingResult.columnsMapping.columnIdxes(queryClmIdx) match {
+            case Some(candClmIdx) if table.columns(candClmIdx)(rowIdx).isDefined =>
+              val value = table.columns(candClmIdx)(rowIdx).get.toLowerCase
+              val score = mappingResult.columnsMapping.score.columns(queryClmIdx).get.score
+              if (!nToRecsMap.contains(score.toInt)) {
+                nToRecsMap(score.toInt) = 0
+              }
+              nToRecsMap(score.toInt) += 1
+            case None => //
+          }
+        }
+
+      }
+
+      val a = nToRecsMap.map { case (n, tblsCount) =>
+        (n, tblsCount)
       }.toMap
 
       (queryClmIdx, a)
