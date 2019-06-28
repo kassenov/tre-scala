@@ -27,6 +27,25 @@ object Table {
 
   }
 
+  def getKeyValuePairsByClmnIdx(table: Table, clmnIdx: Int): Map[String, Option[String]] = {
+
+    val idx = table.keyIdx match {
+      case Some(keyIdx) => keyIdx
+      case None         => 0
+    }
+
+    table.columns(idx)
+      .zipWithIndex
+      .flatMap { case (key, qClmnIdx) =>
+        if (table.hdrIdx.isDefined && table.hdrIdx.get == qClmnIdx || key.isEmpty) {
+          None
+        } else {
+          Some(key.get, table.columns(clmnIdx)(qClmnIdx))
+        }
+      }.toMap
+
+  }
+
   def getRowByIndex(idx: Int, table: Table): List[Option[String]] = {
     if (rowIdxInRange(idx, table)) {
       table.columns.map(column => column(idx))

@@ -6,4 +6,5 @@ import models.matching.{KeyWithIndex, TableMatch}
 @SerialVersionUID(1000L)
 case class MappingPipeResult(columnsMapping: ColumnsMapping,
                              candidateKeysWithIndexes: List[KeyWithIndex],
+                             queryKeysWithIndexes: List[KeyWithIndex],
                              tableMatch: TableMatch)

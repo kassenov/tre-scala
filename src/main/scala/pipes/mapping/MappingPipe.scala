@@ -30,6 +30,7 @@ class MappingPipe(keySearcher: KeySearcher,
   val tableMatchFrequencyMatrixExtractor = new TableMatchFrequencyMatrixExtractor()
   val tableMappingExtractor = new TableMappingExtractor(scoringMethod)
   val tableCandidateKeysWithIndexesExtractor = new TableCandidateKeysWithIndexesExtractor()
+  val queryKeysWithIndexesExtractor = new QueryKeysWithIndexesExtractor()
 
   val excludeTables: List[String] = List.empty //List("Players - A to Z – UEFA.com")
 
@@ -175,8 +176,9 @@ class MappingPipe(keySearcher: KeySearcher,
 
     val columnsMapping = tableMappingExtractor.extract(tableMatch, matchMatrix, frequencyMatrix)
     val candidateKeysWithIndexes = tableCandidateKeysWithIndexesExtractor.extract(tableMatch.candidateTableKeys, tableMatch)
+    val queryKeysWithIndexes = queryKeysWithIndexesExtractor.extract(tableMatch.candidateTableKeys, tableMatch)
 
-    Some(MappingPipeResult(columnsMapping, candidateKeysWithIndexes, tableMatch))
+    Some(MappingPipeResult(columnsMapping, candidateKeysWithIndexes, queryKeysWithIndexes, tableMatch))
 
   }
 
