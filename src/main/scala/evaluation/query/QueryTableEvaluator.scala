@@ -81,10 +81,10 @@ class QueryTableEvaluator(indexReader: IndexReader,
     println(s"===== Counts =====")
 
     val idxToNtoTblsCountMap = getTblsCount(queryKeys.flatten, queryKeyToDocIds, docIdToMappingResult, queryColumnsCount)
-    idxToNtoTblsCountMap.foreach { case (clmnIdx, nToAMap) =>
+    idxToNtoTblsCountMap.foreach { case (clmnIdx, nToTblsCountMap) =>
       println(s"--- clmn idx $clmnIdx ---")
 
-      nToAMap.foreach { case (n, c) =>
+      nToTblsCountMap.foreach { case (n, c) =>
         println(s"n $n sum $c")
       }
     }
@@ -101,25 +101,31 @@ class QueryTableEvaluator(indexReader: IndexReader,
     idxToNtoAMap.foreach { case (clmnIdx, nToAMap) =>
       println(s"--- clmn idx $clmnIdx ---")
 
-      nToAMap.foreach { case (n, a) =>
-        val total = a.size
-        val pairs = a.map { r =>
-          (r.key, r.value)
-        }.toSet
+      nToAMap.toList.sortBy{ case (n, a) => n }.foreach { case (n, a) =>
 
-        val relFreqs = pairs.toList.map { pair =>
-          val numOfPairs = a.count { r =>
-            r.key == pair._1 && r.value == pair._2
+        val keyToValuesMap = a.groupBy(_.key).map{ case (k, recs) => (k, recs.toList.map(_.value)) }
+
+        val entropies = keyToValuesMap.map { case (key, values) =>
+          val total = values.length
+          val relFreqs = values.toSet.toList.map { value: String =>
+            val freq = values.count(v => v == value)
+            freq.toDouble / total.toDouble
           }
-          numOfPairs.toDouble / total.toDouble
-        }
 
-        val p = relFreqs.map { relFreq =>
-          val log2b = log2(relFreq)
-          val log10b = scala.math.log(relFreq)
-          relFreq * log2b
-        }
-        println(s"n $n sum ${-p.sum}")
+          val p = relFreqs.map { relFreq =>
+            val log2b = log2(relFreq)
+            val log10b = scala.math.log(relFreq)
+            relFreq * log2b
+          }
+//          println(s"key $key with entropy ${-p.sum} total ${values.length} and unique ${values.toSet.size} and rf $relFreqs")
+          -p.sum
+        }.toList
+
+        val avgEntropy = entropies.sum / entropies.length
+
+        val count = idxToNtoTblsCountMap(clmnIdx)(n)
+
+        println(s"-- n $n c $count entropy $avgEntropy")
       }
 
     }
