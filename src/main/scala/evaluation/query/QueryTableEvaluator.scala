@@ -84,7 +84,7 @@ class QueryTableEvaluator(indexReader: IndexReader,
     idxToNtoTblsCountMap.foreach { case (clmnIdx, nToTblsCountMap) =>
       println(s"--- clmn idx $clmnIdx ---")
 
-      nToTblsCountMap.foreach { case (n, c) =>
+      nToTblsCountMap.toList.sortBy{ case (n, a) => n }.foreach { case (n, c) =>
         println(s"n $n sum $c")
       }
     }
@@ -276,10 +276,10 @@ class QueryTableEvaluator(indexReader: IndexReader,
 
     List.range(0, clmnsCount).map { queryClmIdx =>
       val nToRecsMap = mutable.Map[Int, Int]()
-      keys.par.foreach { key =>
+      keys.foreach { key =>
         val docIds = keyToDocIds(key)
 
-        docIds.foreach { docId =>
+        docIds.toList.foreach { docId =>
           val mappingResult = docIdToMappingResult(docId)
           val optionRowIdx = mappingResult.queryKeysWithIndexes.find(c => c.value.toLowerCase() == key.toLowerCase())
           if (optionRowIdx.isDefined) {
@@ -289,7 +289,6 @@ class QueryTableEvaluator(indexReader: IndexReader,
             val table = transformer.rawJsonToTable(docId, jsonTable)
             mappingResult.columnsMapping.columnIdxes(queryClmIdx) match {
               case Some(candClmIdx) if table.columns(candClmIdx)(rowIdx).isDefined =>
-                val value = table.columns(candClmIdx)(rowIdx).get.toLowerCase
                 val score = mappingResult.columnsMapping.score.columns(queryClmIdx).get.score
                 if (!nToRecsMap.contains(score.toInt)) {
                   nToRecsMap(score.toInt) = 0
