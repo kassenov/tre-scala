@@ -202,7 +202,7 @@ class Evaluator(groundTruthTable: Table,
       if (valueMatch.isEmpty) {
       truthKeyIdx -> None
     } else {
-      truthKeyIdx -> Some(valueMatch.head.candidateColumnIdx) // <- row idx
+      truthKeyIdx -> Some(valueMatch.head.candidateIdx) // <- row idx
     }
     } else {
       truthKeyIdx -> None
@@ -226,7 +226,7 @@ class Evaluator(groundTruthTable: Table,
               case _                => None
             }
 
-          if (valueMatch.isDefined) { // TODO rethink as keys search
+          if (valueMatch.nonEmpty) {
             truthRowIdx -> Some(foundRowIdx)//Some(valueMatch.get.candidateColumnIdx) // <- row idx
           } else {
             truthRowIdx -> None

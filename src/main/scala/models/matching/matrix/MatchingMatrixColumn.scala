@@ -8,11 +8,14 @@ case class MatchingMatrixColumn(cells: List[MatchingMatrixCell])
 
 object MatchingMatrixColumn {
 
-  def getCandClmnIdxToOccurrenceMap(column: MatchingMatrixColumn): Map[Int, Int] =
-    column.cells
+  def getCandClmnIdxToOccurrenceMap(column: MatchingMatrixColumn): Map[Int, Int] = {
+    val indexes = column.cells
       .flatMap(cell => cell.idxes)
-      .groupBy(identity)
-      .mapValues(_.size)
+
+    val identities = indexes.groupBy(identity)
+      val a = identities.mapValues(_.size)
+    a
+  }
 
   def getCandClmnIdxToQueryRowIdxsMap(column: MatchingMatrixColumn): Map[Int, List[Int]] = {
     val candClmnIdxToQueryRowIdxsMap = mutable.Map[Int, ListBuffer[Int]]()

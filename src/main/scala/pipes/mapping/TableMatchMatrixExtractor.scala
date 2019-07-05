@@ -34,7 +34,7 @@ class TableMatchMatrixExtractor() {
 
           if (queryClmIdxCellMatchMap.contains(queryClmIdx)) {
             val candidateColumnIdxes =
-              queryClmIdxCellMatchMap(queryClmIdx).valueMatches.map(valueMatch => valueMatch.candidateColumnIdx)
+              queryClmIdxCellMatchMap(queryClmIdx).valueMatches.map(valueMatch => valueMatch.candidateIdx)
 
             Some(queryClmIdx, candidateColumnIdxes)
           } else {

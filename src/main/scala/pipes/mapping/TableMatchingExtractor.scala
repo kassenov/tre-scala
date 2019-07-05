@@ -19,7 +19,7 @@ class TableMatchingExtractor(keySearch: KeySearcher, valueSearch: ValueSearcher)
               .flatMap { keyMatch =>
 
                 val queryClmnIdxToCellMatchMap =
-                  getRowCellMatches(queryTable, queryRowIdx, keyMatch.candidateColumnIdx, candidateTable)
+                  getRowCellMatches(queryTable, queryRowIdx, keyMatch.candidateIdx, candidateTable)
                     .flatMap { case (queryClmIdx, valueMatches) =>
                       if (valueMatches.isEmpty) {
                         None
@@ -31,7 +31,7 @@ class TableMatchingExtractor(keySearch: KeySearcher, valueSearch: ValueSearcher)
                 if (queryClmnIdxToCellMatchMap.isEmpty) {
                   None
                 } else {
-                  Some(RowMatch(keyMatch.candidateColumnIdx, queryClmnIdxToCellMatchMap))
+                  Some(RowMatch(keyMatch.candidateIdx, queryClmnIdxToCellMatchMap))
                 }
 
               }
@@ -87,10 +87,7 @@ class TableMatchingExtractor(keySearch: KeySearcher, valueSearch: ValueSearcher)
 
         } else {
 
-          (valueSearch.getValueMatchInValues(queryCellValue, tableRow, exclude = List(candidateTable.keyIdx.getOrElse(0))) match {
-            case None             => List.empty
-            case Some(valueMatch) => List(valueMatch)
-          }) match {
+          valueSearch.getValueMatchInValues(queryCellValue, tableRow, exclude = List(candidateTable.keyIdx.getOrElse(0))) match {
             case list => (queryClmIdx, list)
           }
 
