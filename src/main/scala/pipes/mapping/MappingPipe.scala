@@ -72,7 +72,7 @@ class MappingPipe(keySearcher: KeySearcher,
     } else {
       val queryColumnsCount = queryTable.columns.length
 
-      val results = (docIdToTableMatch map { case (docId, tableMatch) =>
+      val results = (docIdToTableMatch.par map { case (docId, tableMatch) =>
           processMatrix(tableMatch, queryColumnsCount) match {
             case Some(matrix) => Some(docId -> matrix)
             case None         => None
@@ -110,7 +110,7 @@ class MappingPipe(keySearcher: KeySearcher,
       serializer.deserialize(mappingFileName).asInstanceOf[Map[Int,MappingPipeResult]]
     } else {
 
-      val results = (docIdToMatrix map { case (docId, matrix) =>
+      val results = (docIdToMatrix.par map { case (docId, matrix) =>
         processMapping(docIdToTableMatch(docId), matrix, totalFrequencyMatrix) match {
           case Some(mapping) =>
             val potentialKeysCount = mapping.candidateKeysWithIndexes.length

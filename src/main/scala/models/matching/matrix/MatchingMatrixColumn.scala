@@ -9,12 +9,10 @@ case class MatchingMatrixColumn(cells: List[MatchingMatrixCell])
 object MatchingMatrixColumn {
 
   def getCandClmnIdxToOccurrenceMap(column: MatchingMatrixColumn): Map[Int, Int] = {
-    val indexes = column.cells
+    column.cells
       .flatMap(cell => cell.idxes)
-
-    val identities = indexes.groupBy(identity)
-      val a = identities.mapValues(_.size)
-    a
+      .groupBy(identity)
+      .mapValues(_.size)
   }
 
   def getCandClmnIdxToQueryRowIdxsMap(column: MatchingMatrixColumn): Map[Int, List[Int]] = {
