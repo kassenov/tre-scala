@@ -60,9 +60,9 @@ object Table {
   def getColumnsWithRandomRows(count: Int, table: Table, shuffle: Boolean = true): List[List[Option[String]]] = {
     val idxes = List.range(0, table.columns.head.length)
     val randomIdxes = if (shuffle) {
-      Random.shuffle(idxes).slice(0, count)
+      Random.shuffle(idxes).slice(0, count + 1)
     } else {
-      idxes.slice(0, count)
+      idxes.slice(0, count + 1)
     }
 
     table.columns.map { c =>

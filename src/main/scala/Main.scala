@@ -92,6 +92,46 @@ object Main extends App {
       val duration = TimeUnit.NANOSECONDS.toSeconds(endTime - startTime)
       println(s"Finished indexing for $concept. Total found ${retrievedTable.columns.head.length} in $duration seconds")
 
+    case TaskFlow.KeyValueEntropyEval =>
+
+      List.range(1, groundTruthTable.columns.head.length) foreach { targetRowIdx =>
+        println(s"----------------------  $targetRowIdx  ---------------------------------------")
+        val oneRowTableColumns = groundTruthTable.columns.map { c =>
+          c.zipWithIndex.collect { case (x, i) if i == 0 || i == targetRowIdx => x }
+        }
+
+        val queryTable = new Table(docId = 0,"Query", "None", keyIdx = Some(0), hdrIdx = Some(0), columns = oneRowTableColumns)
+        val tableColumnsRelations = configs.columnsRelations.map(rel => TableColumnsRelation(rel))
+
+        println("Start")
+        val startTime = System.nanoTime
+
+        val algorithm = new TrexAlgorithm(reader, tableSearch, analyzer, s"${concept}_kve_$targetRowIdx", tableColumnsRelations, configs.scoringMethod, configs.maxK)
+        val retrievedTable = algorithm.run(queryTable)
+
+        val endTime = System.nanoTime
+        val duration = TimeUnit.NANOSECONDS.toSeconds(endTime - startTime)
+        println(s"Finished indexing for $concept. Total found ${retrievedTable.columns.head.length} in $duration seconds")
+
+        csvUtils.exportTable(queryTable, s"query_$concept${configs.queryRowsCount}")
+        csvUtils.exportTable(retrievedTable, s"retrieved_$concept${configs.queryRowsCount}")
+
+        //-------------------
+
+        println("Start")
+        val startTime2 = System.nanoTime
+
+        val algorithm2 = new QueryTableEvaluator(reader, tableSearch, analyzer, s"${concept}_kve_$targetRowIdx", tableColumnsRelations, configs.scoringMethod, configs.maxK)
+        val retrievedTable2 = algorithm2.run(queryTable)
+
+        val endTime2 = System.nanoTime
+        val duration2 = TimeUnit.NANOSECONDS.toSeconds(endTime2 - startTime2)
+        println(s"Finished evel for $concept. Total found ${retrievedTable2.columns.head.length} in $duration2 seconds")
+
+        println(s"---------------------------------------------------------------")
+
+      }
+
     case TaskFlow.Evaluating =>
 
       val queryTable1 = csvUtils.importTableByName(name = s"query_$concept${configs.queryRowsCount}", configs.columnsCount, hdrRowIdx = Some(0))
