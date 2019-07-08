@@ -176,7 +176,7 @@ class MappingPipe(keySearcher: KeySearcher,
 
     val columnsMapping = tableMappingExtractor.extract(tableMatch, matchMatrix, frequencyMatrix)
     val candidateKeysWithIndexes = tableCandidateKeysWithIndexesExtractor.extract(tableMatch.candidateTableKeys, tableMatch)
-    val queryKeysWithIndexes = queryKeysWithIndexesExtractor.extract(tableMatch.candidateTableKeys, tableMatch)
+    val queryKeysWithIndexes = queryKeysWithIndexesExtractor.extract(tableMatch.candidateTableKeys, tableMatch, queryKeys)
 
     Some(MappingPipeResult(columnsMapping, candidateKeysWithIndexes, queryKeysWithIndexes, tableMatch))
 

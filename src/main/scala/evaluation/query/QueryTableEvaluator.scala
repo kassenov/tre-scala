@@ -8,7 +8,8 @@ import org.apache.lucene.analysis.Analyzer
 import org.apache.lucene.index.IndexReader
 import pipes.mapping.MappingPipe
 import search.{KeySearcherWithSimilarity, TableSearcher, ValueSearcherWithSimilarity}
-import statistics.LuceneIndexTermFrequencyProvider
+import similarity.{ByWordLevenshteinSimilarity, TermFrequencyScorer}
+import statistics.{LuceneIndexTermFrequencyProvider, TermFrequencyProvider}
 import transformers.Transformer
 import utls.{MapScoring, Serializer}
 
@@ -89,7 +90,7 @@ class QueryTableEvaluator(indexReader: IndexReader,
       }
     }
 
-    println(s"===== Entropy =====")
+    println(s"===== Entropy for ($queryKeys)=====")
 
     val excludeClmnIdxTo = List.range(1, queryColumnsCount).map { queryClmIdx =>
       (queryClmIdx, Table.getKeyValuePairsByClmnIdx(queryTable, queryClmIdx))
@@ -117,7 +118,7 @@ class QueryTableEvaluator(indexReader: IndexReader,
             val log10b = scala.math.log(relFreq)
             relFreq * log2b
           }
-//          println(s"key $key with entropy ${-p.sum} total ${values.length} and unique ${values.toSet.size} and rf $relFreqs")
+          //println(s"key $key with entropy ${-p.sum} total ${values.length} and unique ${values.toSet.size} and rf $relFreqs")
           -p.sum
         }.toList
 
