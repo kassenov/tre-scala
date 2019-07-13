@@ -192,14 +192,14 @@ class QueryTableEvaluator(indexReader: IndexReader,
                     docIdToMappingResult: Map[Int,MappingPipeResult],
                     clmnsCount: Int): Map[Int, Map[Int, Set[rec]]] =
 
-    List.range(1, clmnsCount).map { queryClmIdx =>
+    List.range(1, clmnsCount).par.map { queryClmIdx =>
       val nToRecsMap = mutable.Map[Int, mutable.ListBuffer[rec]]()
-      keys.par.foreach { key =>
+      keys.foreach { key =>
         val docIds = keyToDocIds(key)
 
         docIds.foreach { docId =>
           val mappingResult = docIdToMappingResult(docId)
-          val rowIdx = mappingResult.candidateKeysWithIndexes.find(c => c.value == key).get.idx
+          val rowIdx = mappingResult.candidateKeysWithIndexes.find(c => c.value.toLowerCase() == key.toLowerCase()).get.idx
 
           val jsonTable = tableSearcher.getRawJsonTableByDocId(docId)
           val table = transformer.rawJsonToTable(docId, jsonTable)
@@ -223,7 +223,7 @@ class QueryTableEvaluator(indexReader: IndexReader,
 
       (queryClmIdx, a)
 
-    }.toMap
+    }.toMap.seq
 
   private def getAsWithExclude(keys: List[String],
                     keyToDocIds: Map[String, Set[Int]],

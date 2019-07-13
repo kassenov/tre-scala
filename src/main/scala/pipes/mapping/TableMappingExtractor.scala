@@ -70,8 +70,8 @@ class TableMappingExtractor(scoringMethod: MapScoring.Value) {
     // Filtering out by columns mismatches fraction
     MatchMatrix.getBestIdxPerColumnByCount(matchMatrix)
       .map {
-        case Some(idxWithOccurrence) if idxWithOccurrence.occurrence > 0 => Some(idxWithOccurrence)
-//        case Some(idxWithOccurrence) if idxWithOccurrence.occurrence >= queryKeysCount / 2 => Some(idxWithOccurrence)
+//        case Some(idxWithOccurrence) if idxWithOccurrence.occurrence > 0 => Some(idxWithOccurrence)
+        case Some(idxWithOccurrence) if idxWithOccurrence.occurrence >= queryKeysCount / 2 => Some(idxWithOccurrence)
         case _                                                                             => None
       }
 
