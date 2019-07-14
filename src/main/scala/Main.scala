@@ -77,6 +77,12 @@ object Main extends App {
 
     case TaskFlow.QueryTableEval =>
 
+      val contentTermFrequencyProvider = new LuceneIndexTermFrequencyProvider(reader, IndexFields.content)
+      val valueSearcher = new ValueSearcherWithSimilarity(contentTermFrequencyProvider, analyzer)
+
+      val entitiesTermFrequencyProvider = new LuceneIndexTermFrequencyProvider(reader, IndexFields.entities)
+      val keySearcher = new KeySearcherWithSimilarity(entitiesTermFrequencyProvider, analyzer)
+
       val queryTableColumns = Table.getColumnsWithRandomRows(count=configs.queryRowsCount, groundTruthTable, shuffle = false)
       val queryTable = new Table(docId = 0,"Query", "None", keyIdx = Some(0), hdrIdx = Some(0), columns = queryTableColumns)
 
@@ -85,7 +91,7 @@ object Main extends App {
       println("Start")
       val startTime = System.nanoTime
 
-      val algorithm = new QueryTableEvaluator(reader, tableSearch, analyzer, s"$concept${configs.queryRowsCount}", tableColumnsRelations, configs.scoringMethod, configs.maxK)
+      val algorithm = new QueryTableEvaluator(reader, tableSearch, analyzer, s"$concept${configs.queryRowsCount}", tableColumnsRelations, configs.scoringMethod, configs.maxK, keySearcher, valueSearcher, None)
       val retrievedTable = algorithm.run(queryTable)
 
       val endTime = System.nanoTime
@@ -94,6 +100,13 @@ object Main extends App {
 
     case TaskFlow.KeyValueEntropyEval =>
 
+      val contentTermFrequencyProvider = new LuceneIndexTermFrequencyProvider(reader, IndexFields.content)
+      val valueSearcher = new ValueSearcherWithSimilarity(contentTermFrequencyProvider, analyzer)
+
+      val entitiesTermFrequencyProvider = new LuceneIndexTermFrequencyProvider(reader, IndexFields.entities)
+      val keySearcher = new KeySearcherWithSimilarity(entitiesTermFrequencyProvider, analyzer)
+
+      val groundTruthKeys = Table.getKeys(groundTruthTable)
       List.range(1, groundTruthTable.columns.head.length) foreach { targetRowIdx =>
         println(s"----------------------  $targetRowIdx  ---------------------------------------")
         val oneRowTableColumns = groundTruthTable.columns.map { c =>
@@ -121,7 +134,7 @@ object Main extends App {
         println("Start")
         val startTime2 = System.nanoTime
 
-        val algorithm2 = new QueryTableEvaluator(reader, tableSearch, analyzer, s"${concept}_kve_$targetRowIdx", tableColumnsRelations, configs.scoringMethod, configs.maxK)
+        val algorithm2 = new QueryTableEvaluator(reader, tableSearch, analyzer, s"${concept}_kve_$targetRowIdx", tableColumnsRelations, configs.scoringMethod, configs.maxK, keySearcher, valueSearcher, Some(groundTruthKeys))
         val retrievedTable2 = algorithm2.run(queryTable)
 
         val endTime2 = System.nanoTime

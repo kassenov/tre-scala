@@ -7,7 +7,7 @@ import models.relation.TableColumnsRelation
 import org.apache.lucene.analysis.Analyzer
 import org.apache.lucene.index.IndexReader
 import pipes.mapping.MappingPipe
-import search.{KeySearcherWithSimilarity, TableSearcher, ValueSearcherWithSimilarity}
+import search.{KeySearcher, KeySearcherWithSimilarity, TableSearcher, ValueSearcher, ValueSearcherWithSimilarity}
 import similarity.{ByWordLevenshteinSimilarity, TermFrequencyScorer}
 import statistics.{LuceneIndexTermFrequencyProvider, TermFrequencyProvider}
 import transformers.Transformer
@@ -26,7 +26,10 @@ class QueryTableEvaluator(indexReader: IndexReader,
                           dataName: String,
                           tableColumnsRelations: List[TableColumnsRelation],
                           scoringMethod: MapScoring.Value,
-                          topK: Int) extends Timing {
+                          topK: Int,
+                          keySearch: KeySearcher,
+                          valueSearch: ValueSearcher,
+                          groundTruthKeys: Option[List[Option[String]]]) extends Timing {
 
   private val transformer = new Transformer
   private val serializer = new Serializer()
@@ -97,7 +100,65 @@ class QueryTableEvaluator(indexReader: IndexReader,
     }.toMap
 
 //    val idxToNtoAMap = getAs(candidateKeys ++ queryKeys.flatten, candidateKeyToDocIds ++ queryKeyToDocIds, docIdToMappingResult, excludeClmnIdxTo, queryColumnsCount)
-    val idxToNtoAMap = getAs(candidateKeys, candidateKeyToDocIds, docIdToMappingResult, queryColumnsCount)
+    val idxToNtoAMap = if (groundTruthKeys.isDefined) {
+      // for ground truth keys
+
+//      val filteredCandidateKeysMatchingGroundTruthKeys = candidateKeys.par.
+//        flatMap{ candidateKey =>
+//
+//          val matches =
+//            keySearch.getValueMatchesOfKeyInKeys(candidateKey, groundTruthKeys.get)
+//              .flatMap {
+//                case m if m.sim > 0 => Some(m)
+//                case _ => None
+//              }
+//
+//          if (matches.nonEmpty) {
+//            Some(candidateKey)
+//          } else {
+//            None
+//          }
+//
+//        }.seq.toList
+
+//      val filteredCandidateKeysMatchingGroundTruthKeys = groundTruthKeys.get.flatten.par.
+//        flatMap{ truthKey =>
+//
+//          val matches =
+//            keySearch.getValueMatchesOfKeyInKeys(truthKey, candidateKeys.map(Some(_)))
+//              .flatMap {
+//                case m if m.sim > 0 => Some(m)
+//                case _ => None
+//              }
+//
+//          matches.map { m =>
+//            candidateKeys(m.candidateIdx)
+//          }
+//
+//        }.seq.toList
+
+
+      val filteredCandidateKeysMatchingGroundTruthKeys = groundTruthKeys.get.flatten.par.
+        flatMap{ truthKey =>
+
+          val matches =
+            valueSearch.getValueMatchInValues(truthKey.toLowerCase(), candidateKeys.map(Some(_)), exclude = List.empty)
+              .flatMap {
+                case m if m.sim > 0 => Some(m)
+                case _ => None
+              }
+
+          matches.map { m =>
+            candidateKeys(m.candidateIdx)
+          }
+
+        }.seq.toList
+
+      getAs(filteredCandidateKeysMatchingGroundTruthKeys, candidateKeyToDocIds, docIdToMappingResult, queryColumnsCount)
+    } else {
+      // for all candidate keys
+      getAs(candidateKeys, candidateKeyToDocIds, docIdToMappingResult, queryColumnsCount)
+    }
 
     idxToNtoAMap.foreach { case (clmnIdx, nToAMap) =>
       println(s"--- clmn idx $clmnIdx ---")
