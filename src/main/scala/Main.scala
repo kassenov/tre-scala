@@ -107,7 +107,7 @@ object Main extends App {
       val keySearcher = new KeySearcherWithSimilarity(entitiesTermFrequencyProvider, analyzer)
 
       val groundTruthKeys = Table.getKeys(groundTruthTable)
-      List.range(1, groundTruthTable.columns.head.length) foreach { targetRowIdx =>
+      List.range(86, 87) foreach { targetRowIdx =>
         println(s"----------------------  $targetRowIdx  ---------------------------------------")
         val oneRowTableColumns = groundTruthTable.columns.map { c =>
           c.zipWithIndex.collect { case (x, i) if i == 0 || i == targetRowIdx => x }

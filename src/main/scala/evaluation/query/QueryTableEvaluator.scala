@@ -180,6 +180,7 @@ class QueryTableEvaluator(indexReader: IndexReader,
             relFreq * log2b
           }
           //println(s"key $key with entropy ${-p.sum} total ${values.length} and unique ${values.toSet.size} and rf $relFreqs")
+          //println(s"${-p.sum}")
           -p.sum
         }.toList
 
