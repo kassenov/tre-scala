@@ -1,14 +1,21 @@
 {
-  "query_rows_count": 10,
-  "concept": "indolympics2008",
+  "query_rows_count": 5,
+  "concept": "foobal100",
   "clmns_count": 4,
-  "task": "ExtEvalPairWise",
+  "task": "KeyValueEntropyEval",
   "scoring": "Simple",
-  "maxK": 237,
-  "clmns_relations": [[0,1],[0,2]],
+  "maxK": 100000,
+  "clmns_relations": [[0,1],[0,2],[0,3]],
   "doc_ids": [11407084, 34743165, 26448278, 37525376],
-  "ext_params": ["/media/light/SSD/50/MannheimSearchJoinsEngine/results/olympics_2008_gold_bronze_silver.csv"],
+  "ext_params": ["/media/light/SSD/50/MannheimSearchJoinsEngine/results/countries_region.csv"],
   "pConcepts": ["countries"],
-  "pTasks": ["Mapping", "Evaluating", "KeysAnalysis", "Extracting", "ExtEvalPairWise"],
-  "pScorings": ["AdjacentMatchWeight", "Simple"]
+  "pTasks": ["Mapping", "Evaluating", "KeysAnalysis", "Extracting", "ExtEvalPairWise", "QueryTableEval", "KeyValueEntropyEval"],
+  "pScorings": ["AdjacentMatchWeight", "Simple"],
+  "truth_tables": [{
+    "title": "entr_high_olympics2008_gold",
+    "clmns_count": 2
+  }, {
+    "title": "n_low_olympics2008_gold",
+    "clmns_count": 4
+  }]
 }
