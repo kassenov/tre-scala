@@ -135,7 +135,7 @@ object Main extends App {
         val startTime2 = System.nanoTime
 
         val algorithm2 = new QueryTableEvaluator(reader, tableSearch, analyzer, s"${concept}_kve_$targetRowIdx", tableColumnsRelations, configs.scoringMethod, configs.maxK, keySearcher, valueSearcher, Some(groundTruthKeys))
-        val result = algorithm2.run(queryTable, false)
+        val result = algorithm2.run(queryTable, true)
 
         val endTime2 = System.nanoTime
         val duration2 = TimeUnit.NANOSECONDS.toSeconds(endTime2 - startTime2)
@@ -147,13 +147,23 @@ object Main extends App {
 
       }
 
-      val columns = List.range(0, groundTruthTable.columns.length).map { clmIdx =>
+      val columns = List.range(0, groundTruthTable.columns.length * 2 - 1).map { clmIdx =>
         results.map { r =>
           clmIdx match {
             case 0 =>
-              r.queryKeys.head
+              r.queryKeys(1)
+            case n if n < groundTruthTable.columns.length =>
+              if (r.clmnIdxToNToCount(clmIdx).contains(1)) {
+                Some(r.clmnIdxToNToCount(clmIdx)(1).toString)
+              } else {
+                None
+              }
             case _ =>
-              Some(r.clmnIdxToNToCount(clmIdx)(1).toString)
+              if (r.clmnIdxToNToEntropy.isDefined) {
+                Some(r.clmnIdxToNToEntropy.get(clmIdx - groundTruthTable.columns.length + 1)(1).toString)
+              } else {
+                None
+              }
           }
         }
       }

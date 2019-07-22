@@ -43,14 +43,18 @@ class LuceneTableSearcher(indexSearcher: IndexSearcher) extends TableSearcher {
 
     println(s"Total found ${scoutSearchResult.totalHits.toInt} tables")
 
-    val docs = indexSearcher
-      .search(query, scoutSearchResult.totalHits.toInt)
-      .scoreDocs
-      .filterNot(scoreDoc => previouslyFoundDocIds.contains(scoreDoc.doc))
-      .map(scoreDoc => scoreDoc.doc)
-      .toList
+    if (scoutSearchResult.totalHits.toInt > 0) {
+      val docs = indexSearcher
+        .search(query, scoutSearchResult.totalHits.toInt)
+        .scoreDocs
+        .filterNot(scoreDoc => previouslyFoundDocIds.contains(scoreDoc.doc))
+        .map(scoreDoc => scoreDoc.doc)
+        .toList
 
-    List(previouslyFoundDocIds, docs).flatten
+      List(previouslyFoundDocIds, docs).flatten
+    } else {
+      List.empty
+    }
 
   }
 
