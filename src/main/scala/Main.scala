@@ -160,7 +160,11 @@ object Main extends App {
               }
             case _ =>
               if (r.clmnIdxToNToEntropy.isDefined) {
-                Some(r.clmnIdxToNToEntropy.get(clmIdx - groundTruthTable.columns.length + 1)(1).toString)
+                if (r.clmnIdxToNToEntropy.get(clmIdx - groundTruthTable.columns.length + 1).contains(1)) {
+                  Some(r.clmnIdxToNToEntropy.get(clmIdx - groundTruthTable.columns.length + 1)(1).toString)
+                } else {
+                  None
+                }
               } else {
                 None
               }
