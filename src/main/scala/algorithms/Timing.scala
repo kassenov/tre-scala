@@ -2,6 +2,7 @@ package algorithms
 
 import java.util.concurrent.TimeUnit
 
+import evaluation.query.EvalResult
 import models.Table
 
 import scala.collection.mutable
@@ -30,5 +31,4 @@ trait Timing {
     }
   }
 
-  def run(queryTable: Table): Table
 }

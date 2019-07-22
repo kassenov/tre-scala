@@ -92,11 +92,11 @@ object Main extends App {
       val startTime = System.nanoTime
 
       val algorithm = new QueryTableEvaluator(reader, tableSearch, analyzer, s"$concept${configs.queryRowsCount}", tableColumnsRelations, configs.scoringMethod, configs.maxK, keySearcher, valueSearcher, None)
-      val retrievedTable = algorithm.run(queryTable)
+      val retrievedTable = algorithm.run(queryTable, true)
 
       val endTime = System.nanoTime
       val duration = TimeUnit.NANOSECONDS.toSeconds(endTime - startTime)
-      println(s"Finished indexing for $concept. Total found ${retrievedTable.columns.head.length} in $duration seconds")
+      println(s"Finished indexing for $concept in $duration seconds")
 
     case TaskFlow.KeyValueEntropyEval =>
 
@@ -135,7 +135,7 @@ object Main extends App {
         val startTime2 = System.nanoTime
 
         val algorithm2 = new QueryTableEvaluator(reader, tableSearch, analyzer, s"${concept}_kve_$targetRowIdx", tableColumnsRelations, configs.scoringMethod, configs.maxK, keySearcher, valueSearcher, Some(groundTruthKeys))
-        val result = algorithm2.run(queryTable)
+        val result = algorithm2.run(queryTable, false)
 
         val endTime2 = System.nanoTime
         val duration2 = TimeUnit.NANOSECONDS.toSeconds(endTime2 - startTime2)

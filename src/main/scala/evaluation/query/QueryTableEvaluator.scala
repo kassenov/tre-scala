@@ -45,7 +45,7 @@ class QueryTableEvaluator(indexReader: IndexReader,
   val lnOf2 = scala.math.log(2)
   def log2(x: Double): Double = scala.math.log(x) / lnOf2
 
-  def run(queryTable: Table): EvalResult = {
+  def run(queryTable: Table, entropy: Boolean): EvalResult = {
     super.initTimings(levels = 3)
 
     val queryKeys = Table.getKeys(queryTable).distinct
@@ -96,107 +96,112 @@ class QueryTableEvaluator(indexReader: IndexReader,
       (clmnIdx, nToCount)
     }
 
-    println(s"===== Entropy for ($queryKeys)=====")
+    val clmnIdxToNToEntropy = if (entropy) {
+      println(s"===== Entropy for ($queryKeys)=====")
 
-    val excludeClmnIdxTo = List.range(1, queryColumnsCount).map { queryClmIdx =>
-      (queryClmIdx, Table.getKeyValuePairsByClmnIdx(queryTable, queryClmIdx))
-    }.toMap
-
-//    val idxToNtoAMap = getAs(candidateKeys ++ queryKeys.flatten, candidateKeyToDocIds ++ queryKeyToDocIds, docIdToMappingResult, excludeClmnIdxTo, queryColumnsCount)
-    val idxToNtoAMap = if (groundTruthKeys.isDefined) {
-      // for ground truth keys
-
-//      val filteredCandidateKeysMatchingGroundTruthKeys = candidateKeys.par.
-//        flatMap{ candidateKey =>
-//
-//          val matches =
-//            keySearch.getValueMatchesOfKeyInKeys(candidateKey, groundTruthKeys.get)
-//              .flatMap {
-//                case m if m.sim > 0 => Some(m)
-//                case _ => None
-//              }
-//
-//          if (matches.nonEmpty) {
-//            Some(candidateKey)
-//          } else {
-//            None
-//          }
-//
-//        }.seq.toList
-
-//      val filteredCandidateKeysMatchingGroundTruthKeys = groundTruthKeys.get.flatten.par.
-//        flatMap{ truthKey =>
-//
-//          val matches =
-//            keySearch.getValueMatchesOfKeyInKeys(truthKey, candidateKeys.map(Some(_)))
-//              .flatMap {
-//                case m if m.sim > 0 => Some(m)
-//                case _ => None
-//              }
-//
-//          matches.map { m =>
-//            candidateKeys(m.candidateIdx)
-//          }
-//
-//        }.seq.toList
-
-
-      val filteredCandidateKeysMatchingGroundTruthKeys = groundTruthKeys.get.flatten.par.
-        flatMap{ truthKey =>
-
-          val matches =
-            valueSearch.getValueMatchInValues(truthKey.toLowerCase(), candidateKeys.map(Some(_)), exclude = List.empty)
-              .flatMap {
-                case m if m.sim > 0 => Some(m)
-                case _ => None
-              }
-
-          matches.map { m =>
-            candidateKeys(m.candidateIdx)
-          }
-
-        }.seq.toList
-
-      getAs(filteredCandidateKeysMatchingGroundTruthKeys, candidateKeyToDocIds, docIdToMappingResult, queryColumnsCount)
-    } else {
-      // for all candidate keys
-      getAs(candidateKeys, candidateKeyToDocIds, docIdToMappingResult, queryColumnsCount)
-    }
-
-    val clmnIdxToNToEntropy = idxToNtoAMap.map { case (clmnIdx, nToAMap) =>
-      println(s"--- clmn idx $clmnIdx ---")
-
-      val nToEntropy = nToAMap.toList.sortBy{ case (n, a) => n }.map { case (n, a) =>
-
-        val keyToValuesMap = a.groupBy(_.key).map{ case (k, recs) => (k, recs.toList.map(_.value)) }
-
-        val entropies = keyToValuesMap.map { case (key, values) =>
-          val total = values.length
-          val relFreqs = values.toSet.toList.map { value: String =>
-            val freq = values.count(v => v == value)
-            freq.toDouble / total.toDouble
-          }
-
-          val p = relFreqs.map { relFreq =>
-            val log2b = log2(relFreq)
-            val log10b = scala.math.log(relFreq)
-            relFreq * log2b
-          }
-          //println(s"key $key with entropy ${-p.sum} total ${values.length} and unique ${values.toSet.size} and rf $relFreqs")
-          //println(s"${-p.sum}")
-          -p.sum
-        }.toList
-
-        val avgEntropy = entropies.sum / entropies.length
-
-        val count = idxToNtoTblsCountMap(clmnIdx)(n)
-
-        println(s"-- n $n c $count entropy $avgEntropy")
-        (n, avgEntropy)
+      val excludeClmnIdxTo = List.range(1, queryColumnsCount).map { queryClmIdx =>
+        (queryClmIdx, Table.getKeyValuePairsByClmnIdx(queryTable, queryClmIdx))
       }.toMap
 
-      (clmnIdx, nToEntropy)
+      //    val idxToNtoAMap = getAs(candidateKeys ++ queryKeys.flatten, candidateKeyToDocIds ++ queryKeyToDocIds, docIdToMappingResult, excludeClmnIdxTo, queryColumnsCount)
+      val idxToNtoAMap = if (groundTruthKeys.isDefined) {
+        // for ground truth keys
 
+        //      val filteredCandidateKeysMatchingGroundTruthKeys = candidateKeys.par.
+        //        flatMap{ candidateKey =>
+        //
+        //          val matches =
+        //            keySearch.getValueMatchesOfKeyInKeys(candidateKey, groundTruthKeys.get)
+        //              .flatMap {
+        //                case m if m.sim > 0 => Some(m)
+        //                case _ => None
+        //              }
+        //
+        //          if (matches.nonEmpty) {
+        //            Some(candidateKey)
+        //          } else {
+        //            None
+        //          }
+        //
+        //        }.seq.toList
+
+        //      val filteredCandidateKeysMatchingGroundTruthKeys = groundTruthKeys.get.flatten.par.
+        //        flatMap{ truthKey =>
+        //
+        //          val matches =
+        //            keySearch.getValueMatchesOfKeyInKeys(truthKey, candidateKeys.map(Some(_)))
+        //              .flatMap {
+        //                case m if m.sim > 0 => Some(m)
+        //                case _ => None
+        //              }
+        //
+        //          matches.map { m =>
+        //            candidateKeys(m.candidateIdx)
+        //          }
+        //
+        //        }.seq.toList
+
+
+        val filteredCandidateKeysMatchingGroundTruthKeys = groundTruthKeys.get.flatten.par.
+          flatMap{ truthKey =>
+
+            val matches =
+              valueSearch.getValueMatchInValues(truthKey.toLowerCase(), candidateKeys.map(Some(_)), exclude = List.empty)
+                .flatMap {
+                  case m if m.sim > 0 => Some(m)
+                  case _ => None
+                }
+
+            matches.map { m =>
+              candidateKeys(m.candidateIdx)
+            }
+
+          }.seq.toList
+
+        getAs(filteredCandidateKeysMatchingGroundTruthKeys, candidateKeyToDocIds, docIdToMappingResult, queryColumnsCount)
+      } else {
+        // for all candidate keys
+        getAs(candidateKeys, candidateKeyToDocIds, docIdToMappingResult, queryColumnsCount)
+      }
+
+      val res = idxToNtoAMap.map { case (clmnIdx, nToAMap) =>
+        println(s"--- clmn idx $clmnIdx ---")
+
+        val nToEntropy = nToAMap.toList.sortBy{ case (n, a) => n }.map { case (n, a) =>
+
+          val keyToValuesMap = a.groupBy(_.key).map{ case (k, recs) => (k, recs.toList.map(_.value)) }
+
+          val entropies = keyToValuesMap.map { case (key, values) =>
+            val total = values.length
+            val relFreqs = values.toSet.toList.map { value: String =>
+              val freq = values.count(v => v == value)
+              freq.toDouble / total.toDouble
+            }
+
+            val p = relFreqs.map { relFreq =>
+              val log2b = log2(relFreq)
+              val log10b = scala.math.log(relFreq)
+              relFreq * log2b
+            }
+            //println(s"key $key with entropy ${-p.sum} total ${values.length} and unique ${values.toSet.size} and rf $relFreqs")
+            //println(s"${-p.sum}")
+            -p.sum
+          }.toList
+
+          val avgEntropy = entropies.sum / entropies.length
+
+          val count = idxToNtoTblsCountMap(clmnIdx)(n)
+
+          println(s"-- n $n c $count entropy $avgEntropy")
+          (n, avgEntropy)
+        }.toMap
+
+        (clmnIdx, nToEntropy)
+
+      }
+      Some(res)
+    } else {
+      None
     }
 
     EvalResult(queryKeys, clmnIdxToNToCount, clmnIdxToNToEntropy)
