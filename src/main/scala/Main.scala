@@ -107,7 +107,7 @@ object Main extends App {
       val keySearcher = new KeySearcherWithSimilarity(entitiesTermFrequencyProvider, analyzer)
 
       val groundTruthKeys = Table.getKeys(groundTruthTable)
-      List.range(1, groundTruthTable.columns.head.length) foreach { targetRowIdx =>
+      val results = List.range(1, groundTruthTable.columns.head.length) map { targetRowIdx =>
         println(s"----------------------  $targetRowIdx  ---------------------------------------")
         val oneRowTableColumns = groundTruthTable.columns.map { c =>
           c.zipWithIndex.collect { case (x, i) if i == 0 || i == targetRowIdx => x }
@@ -135,15 +135,39 @@ object Main extends App {
         val startTime2 = System.nanoTime
 
         val algorithm2 = new QueryTableEvaluator(reader, tableSearch, analyzer, s"${concept}_kve_$targetRowIdx", tableColumnsRelations, configs.scoringMethod, configs.maxK, keySearcher, valueSearcher, Some(groundTruthKeys))
-        val retrievedTable2 = algorithm2.run(queryTable)
+        val result = algorithm2.run(queryTable)
 
         val endTime2 = System.nanoTime
         val duration2 = TimeUnit.NANOSECONDS.toSeconds(endTime2 - startTime2)
-        println(s"Finished evel for $concept. Total found ${retrievedTable2.columns.head.length} in $duration2 seconds")
+        println(s"Finished evel for $concept in $duration2 seconds")
 
         println(s"---------------------------------------------------------------")
 
+        result
+
       }
+
+      val columns = List.range(0, groundTruthTable.columns.length).map { clmIdx =>
+        results.map { r =>
+          clmIdx match {
+            case 0 =>
+              r.queryKeys.head
+            case _ =>
+              Some(r.clmnIdxToNToCount(clmIdx)(1).toString)
+          }
+        }
+      }
+
+      val countsTable = Table(
+        docId = -1,
+        title = "retrieved",
+        url = "no",
+        keyIdx = Some(0),
+        hdrIdx = None,
+        columns = columns
+      )
+
+      csvUtils.exportTable(countsTable, s"counts_$concept${configs.queryRowsCount}")
 
     case TaskFlow.Evaluating =>
 

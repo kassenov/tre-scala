@@ -45,7 +45,7 @@ class QueryTableEvaluator(indexReader: IndexReader,
   val lnOf2 = scala.math.log(2)
   def log2(x: Double): Double = scala.math.log(x) / lnOf2
 
-  def run(queryTable: Table): Table = {
+  def run(queryTable: Table): EvalResult = {
     super.initTimings(levels = 3)
 
     val queryKeys = Table.getKeys(queryTable).distinct
@@ -85,12 +85,15 @@ class QueryTableEvaluator(indexReader: IndexReader,
     println(s"===== Counts =====")
 
     val idxToNtoTblsCountMap = getTblsCount(queryKeys.flatten, queryKeyToDocIds, docIdToMappingResult, queryColumnsCount)
-    idxToNtoTblsCountMap.foreach { case (clmnIdx, nToTblsCountMap) =>
+    val clmnIdxToNToCount = idxToNtoTblsCountMap.map { case (clmnIdx, nToTblsCountMap) =>
       println(s"--- clmn idx $clmnIdx ---")
 
-      nToTblsCountMap.toList.sortBy{ case (n, a) => n }.foreach { case (n, c) =>
+      val nToCount = nToTblsCountMap.toList.sortBy{ case (n, a) => n }.map { case (n, c) =>
         println(s"n $n sum $c")
-      }
+        (n, c)
+      }.toMap
+
+      (clmnIdx, nToCount)
     }
 
     println(s"===== Entropy for ($queryKeys)=====")
@@ -160,10 +163,10 @@ class QueryTableEvaluator(indexReader: IndexReader,
       getAs(candidateKeys, candidateKeyToDocIds, docIdToMappingResult, queryColumnsCount)
     }
 
-    idxToNtoAMap.foreach { case (clmnIdx, nToAMap) =>
+    val clmnIdxToNToEntropy = idxToNtoAMap.map { case (clmnIdx, nToAMap) =>
       println(s"--- clmn idx $clmnIdx ---")
 
-      nToAMap.toList.sortBy{ case (n, a) => n }.foreach { case (n, a) =>
+      val nToEntropy = nToAMap.toList.sortBy{ case (n, a) => n }.map { case (n, a) =>
 
         val keyToValuesMap = a.groupBy(_.key).map{ case (k, recs) => (k, recs.toList.map(_.value)) }
 
@@ -189,11 +192,14 @@ class QueryTableEvaluator(indexReader: IndexReader,
         val count = idxToNtoTblsCountMap(clmnIdx)(n)
 
         println(s"-- n $n c $count entropy $avgEntropy")
-      }
+        (n, avgEntropy)
+      }.toMap
+
+      (clmnIdx, nToEntropy)
 
     }
 
-    queryTable
+    EvalResult(queryKeys, clmnIdxToNToCount, clmnIdxToNToEntropy)
 
   }
 
@@ -340,28 +346,29 @@ class QueryTableEvaluator(indexReader: IndexReader,
     List.range(0, clmnsCount).map { queryClmIdx =>
       val nToRecsMap = mutable.Map[Int, Int]()
       keys.foreach { key =>
-        val docIds = keyToDocIds(key)
+        if (keyToDocIds.contains(key)) {
+          val docIds = keyToDocIds(key)
 
-        docIds.toList.foreach { docId =>
-          val mappingResult = docIdToMappingResult(docId)
-          val optionRowIdx = mappingResult.queryKeysWithIndexes.find(c => c.value.toLowerCase() == key.toLowerCase())
-          if (optionRowIdx.isDefined) {
-            val rowIdx = optionRowIdx.get.idx
+          docIds.toList.foreach { docId =>
+            val mappingResult = docIdToMappingResult(docId)
+            val optionRowIdx = mappingResult.queryKeysWithIndexes.find(c => c.value.toLowerCase() == key.toLowerCase())
+            if (optionRowIdx.isDefined) {
+              val rowIdx = optionRowIdx.get.idx
 
-            val jsonTable = tableSearcher.getRawJsonTableByDocId(docId)
-            val table = transformer.rawJsonToTable(docId, jsonTable)
-            mappingResult.columnsMapping.columnIdxes(queryClmIdx) match {
-              case Some(candClmIdx) if table.columns(candClmIdx)(rowIdx).isDefined =>
-                val score = mappingResult.columnsMapping.score.columns(queryClmIdx).get.score
-                if (!nToRecsMap.contains(score.toInt)) {
-                  nToRecsMap(score.toInt) = 0
-                }
-                nToRecsMap(score.toInt) += 1
-              case None => //
+              val jsonTable = tableSearcher.getRawJsonTableByDocId(docId)
+              val table = transformer.rawJsonToTable(docId, jsonTable)
+              mappingResult.columnsMapping.columnIdxes(queryClmIdx) match {
+                case Some(candClmIdx) if table.columns(candClmIdx)(rowIdx).isDefined =>
+                  val score = mappingResult.columnsMapping.score.columns(queryClmIdx).get.score
+                  if (!nToRecsMap.contains(score.toInt)) {
+                    nToRecsMap(score.toInt) = 0
+                  }
+                  nToRecsMap(score.toInt) += 1
+                case None => //
+              }
             }
           }
         }
-
       }
 
       val a = nToRecsMap.map { case (n, tblsCount) =>

@@ -91,16 +91,20 @@ class MappingPipe(keySearcher: KeySearcher,
       tableMatchFrequencyMatrixExtractor.extract(docIdToTableMatch(docId), matrix)
     }.seq
 
-    val totalFrequencyMatrix = frequencyMatrices.reduceLeft((a, b) => {
-      val columns = a.columns.zipWithIndex.map { case (a_column, clmn_idx) =>
-        a_column.zipWithIndex.map { case (a_cell, row_idx) =>
-          val b_cell = b.columns(clmn_idx)(row_idx)
-          AdjacentMatches(a_cell.nPositive + b_cell.nPositive, a_cell.nPossible + b_cell.nPossible)
+    val totalFrequencyMatrix = if (frequencyMatrices.nonEmpty) {
+      frequencyMatrices.reduceLeft((a, b) => {
+        val columns = a.columns.zipWithIndex.map { case (a_column, clmn_idx) =>
+          a_column.zipWithIndex.map { case (a_cell, row_idx) =>
+            val b_cell = b.columns(clmn_idx)(row_idx)
+            AdjacentMatches(a_cell.nPositive + b_cell.nPositive, a_cell.nPossible + b_cell.nPossible)
+          }
         }
-      }
 
-      MatchFrequencyMatrix(columns)
-    })
+        MatchFrequencyMatrix(columns)
+      })
+    } else {
+      MatchFrequencyMatrix(List.empty)
+    }
 
     // ================ Mapping ==================
 
