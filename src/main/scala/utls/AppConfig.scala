@@ -11,7 +11,7 @@ case class AppConfig(task: TaskFlow.Value,
                      extParams: List[String])
 
 object TaskFlow extends Enumeration {
-  val Mapping, Evaluating, KeysAnalysis, Extracting, ExtEvalPairWise, QueryTableEval, KeyValueEntropyEval = Value
+  val Mapping, Evaluating, KeysAnalysis, Extracting, ExtEvalPairWise, QueryTableEval, KeyValueEntropyEval, LargeExperiment = Value
 }
 
 object MapScoring extends Enumeration {

@@ -3,7 +3,7 @@ import java.util.concurrent.TimeUnit
 
 import algorithms.TrexAlgorithm
 import evaluation.query.QueryTableEvaluator
-import evaluation.result.{Evaluator, KeysAnalysis}
+import evaluation.result.{EvaluationResult, Evaluator, KeysAnalysis}
 import models.Table
 import models.index.IndexFields
 import models.relation.TableColumnsRelation
@@ -57,20 +57,7 @@ object Main extends App {
   configs.task match {
     case TaskFlow.Mapping =>
 
-      val queryTableColumns = Table.getColumnsWithRandomRows(count=configs.queryRowsCount, groundTruthTable, shuffle = false)
-      val queryTable = new Table(docId = 0,"Query", "None", keyIdx = Some(0), hdrIdx = Some(0), columns = queryTableColumns)
-
-      val tableColumnsRelations = configs.columnsRelations.map(rel => TableColumnsRelation(rel))
-
-      println("Start")
-      val startTime = System.nanoTime
-
-      val algorithm = new TrexAlgorithm(reader, tableSearch, analyzer, s"$concept${configs.queryRowsCount}", tableColumnsRelations, configs.scoringMethod, configs.maxK)
-      val retrievedTable = algorithm.run(queryTable)
-
-      val endTime = System.nanoTime
-      val duration = TimeUnit.NANOSECONDS.toSeconds(endTime - startTime)
-      println(s"Finished indexing for $concept. Total found ${retrievedTable.columns.head.length} in $duration seconds")
+      val (queryTable, retrievedTable) = doMapping(groundTruthTable, configs.queryRowsCount, shuffle = false)
 
       csvUtils.exportTable(queryTable, s"query_$concept${configs.queryRowsCount}")
       csvUtils.exportTable(retrievedTable, s"retrieved_$concept${configs.queryRowsCount}")
@@ -188,28 +175,12 @@ object Main extends App {
       val queryTable1 = csvUtils.importTableByName(name = s"query_$concept${configs.queryRowsCount}", configs.columnsCount, hdrRowIdx = Some(0))
       val retrievedTable1 = csvUtils.importTableByName(name = s"retrieved_$concept${configs.queryRowsCount}", configs.columnsCount, hdrRowIdx = Some(0))
 
-      val entitiesTermFrequencyProvider = new LuceneIndexTermFrequencyProvider(reader, IndexFields.entities)
-      val keySearcher = new KeySearcherWithSimilarity(entitiesTermFrequencyProvider, analyzer)
-
-      val contentTermFrequencyProvider = new LuceneIndexTermFrequencyProvider(reader, IndexFields.content)
-      val valueSearcher = new ValueSearcherWithSimilarity(contentTermFrequencyProvider, analyzer)
-
-      val evaluator = new Evaluator(groundTruthTable, keySearcher, valueSearcher, s"$concept${configs.queryRowsCount}")
-
-      val evalColumns = queryTable1.columns.zipWithIndex.map { case (clmn, clmnIdx) =>
-        clmn ::: retrievedTable1.columns(clmnIdx)
-      }
-      val evalTable = Table(
-        docId = 0,
-        title = "eval",
-        url = "no",
-        keyIdx = Some(0),
-        hdrIdx = None,
-        columns = evalColumns
-      )
-
-      val evalResults = evaluator.evaluate(evalTable)
+      val evalResults = doEval(queryTable1, retrievedTable1)
       println(s"Evals: $evalResults")
+
+    case TaskFlow.LargeExperiment =>
+      val result = doMassiveExperiment()
+      serializer.saveAsJson(result, "100.json")
 
     case TaskFlow.ExtEvalPairWise =>
 
@@ -239,6 +210,84 @@ object Main extends App {
         .foreach { candidateTable =>
           serializer.saveAsJson(candidateTable, candidateTable.docId.toString,"extracted")
         }
+
+  }
+
+  def doMassiveExperiment() = {
+    List.range(1, 100).map { i =>
+      val randomTable = getRandomTable()
+
+      // save table as ground truth csv
+      csvUtils.exportTable(randomTable, s"truth_${randomTable.docId}_1")
+
+      // generate query random 10%
+      val rowsCount = groundTruthTable.columns.head.length
+      val (queryTable, retrievedTable) = doMapping(groundTruthTable, (rowsCount * .1).toInt, shuffle = true)
+
+      // eval
+      val evalResult = doEval(queryTable, retrievedTable)
+
+      // save
+      (randomTable.docId, evalResult)
+    }
+  }
+
+  def getRandomTable(randomDouble: Double = util.Random.nextDouble): Table = {
+    val maxDocsNum = reader.maxDoc()
+    val randomDocId = (randomDouble * maxDocsNum).toInt
+    val jsonTable = reader.document(randomDocId).get("raw")
+
+    transformer.rawJsonToTable(randomDocId, jsonTable) match {
+      case table if table.columns.length > 1 && table.columns.head.length > 7 =>
+        table
+      case _ =>
+        getRandomTable()
+    }
+
+  }
+
+  def doMapping(groundTruthTable: Table, queryRowsCount: Int, shuffle: Boolean): (Table, Table) = {
+    val queryTableColumns = Table.getColumnsWithRandomRows(count=queryRowsCount, groundTruthTable, shuffle)
+    val queryTable = new Table(docId = 0,"Query", "None", keyIdx = Some(0), hdrIdx = Some(0), columns = queryTableColumns)
+
+    val tableColumnsRelations = configs.columnsRelations.map(rel => TableColumnsRelation(rel))
+
+    println("Start")
+    val startTime = System.nanoTime
+
+    val algorithm = new TrexAlgorithm(reader, tableSearch, analyzer, s"$concept${configs.queryRowsCount}", tableColumnsRelations, configs.scoringMethod, configs.maxK)
+    val retrievedTable = algorithm.run(queryTable)
+
+    val endTime = System.nanoTime
+    val duration = TimeUnit.NANOSECONDS.toSeconds(endTime - startTime)
+    println(s"Finished indexing for $concept. Total found ${retrievedTable.columns.head.length} in $duration seconds")
+
+    (queryTable, retrievedTable)
+  }
+
+  def doEval(queryTable: Table, retrievedTable: Table): EvaluationResult = {
+
+    val entitiesTermFrequencyProvider = new LuceneIndexTermFrequencyProvider(reader, IndexFields.entities)
+    val keySearcher = new KeySearcherWithSimilarity(entitiesTermFrequencyProvider, analyzer)
+
+    val contentTermFrequencyProvider = new LuceneIndexTermFrequencyProvider(reader, IndexFields.content)
+    val valueSearcher = new ValueSearcherWithSimilarity(contentTermFrequencyProvider, analyzer)
+
+    val evaluator = new Evaluator(groundTruthTable, keySearcher, valueSearcher, s"$concept${configs.queryRowsCount}")
+
+    val evalColumns = queryTable.columns.zipWithIndex.map { case (clmn, clmnIdx) =>
+      clmn ::: retrievedTable.columns(clmnIdx)
+    }
+    val evalTable = Table(
+      docId = 0,
+      title = "eval",
+      url = "no",
+      keyIdx = Some(0),
+      hdrIdx = None,
+      columns = evalColumns
+    )
+
+    evaluator.evaluate(evalTable)
 
   }
 
