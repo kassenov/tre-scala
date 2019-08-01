@@ -1,6 +1,7 @@
 import java.io.File
 import java.util.concurrent.TimeUnit
 
+import Main.getRandomTable
 import algorithms.TrexAlgorithm
 import evaluation.query.QueryTableEvaluator
 import evaluation.result.{EvaluationResult, Evaluator, KeysAnalysis}
@@ -179,7 +180,9 @@ object Main extends App {
       println(s"Evals: $evalResults")
 
     case TaskFlow.LargeExperiment =>
+//      get100Tables()
       doMassiveExperimentMapping()
+//      doMassiveExperimentEval()
 
     case TaskFlow.ExtEvalPairWise =>
 
@@ -212,10 +215,17 @@ object Main extends App {
 
   }
 
-  def doMassiveExperimentMapping() = {
-    val result = List.range(1, 100).map { i =>
-      val randomTable = getRandomTable()
+  def get100Tables() = {
+    val tables = List.range(1, 100).map { i =>
+      getRandomTable()
+    }
+    serializer.serialize(tables, "100_tables")
+  }
 
+  def doMassiveExperimentMapping() = {
+    val tables = serializer.deserialize("100_tables").asInstanceOf[List[Table]]
+
+    val result = tables.map { randomTable =>
       // save table as ground truth csv
       val truthName = s"truth_${randomTable.docId}_1"
       csvUtils.exportTable(randomTable, truthName)
@@ -223,9 +233,6 @@ object Main extends App {
       // generate query random 10%
       val rowsCount = groundTruthTable.columns.head.length
       val (queryTable, retrievedTable) = doMapping(truthName, groundTruthTable, (rowsCount * .1).toInt, shuffle = true)
-
-//      // eval
-//      val evalResult = doEval(queryTable, retrievedTable)
 
       val queryName = s"query_$concept${configs.queryRowsCount}"
       csvUtils.exportTable(queryTable, queryName)
@@ -235,13 +242,13 @@ object Main extends App {
       // save
       (randomTable.docId, (truthName, queryName, retrievedName), (randomTable.columns.length, randomTable.hdrIdx, randomTable.keyIdx))
     }
-    serializer.saveAsJson(result, "100_mapping.json")
+    serializer.serialize(result, "100_mapping")
 
     result
   }
 
   def doMassiveExperimentEval() = {
-    val mappingResult = serializer.deserialize("100_mapping.json").asInstanceOf[List[(Int, (String, String, String), (Int, Option[Int], Option[Int]))]]
+    val mappingResult = serializer.deserialize("100_mapping").asInstanceOf[List[(Int, (String, String, String), (Int, Option[Int], Option[Int]))]]
 
     val result = mappingResult.map { case (docId, (truthName, queryName, retrievedName), (clmnsCount, hdrIdx, keyIdx)) =>
       val queryTable = csvUtils.importTableByName(name = queryName, configs.columnsCount, hdrIdx, keyIdx)
