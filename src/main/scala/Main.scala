@@ -57,7 +57,7 @@ object Main extends App {
   configs.task match {
     case TaskFlow.Mapping =>
 
-      val (queryTable, retrievedTable) = doMapping(groundTruthTable, configs.queryRowsCount, shuffle = false)
+      val (queryTable, retrievedTable) = doMapping(s"$concept${configs.queryRowsCount}", groundTruthTable, configs.queryRowsCount, shuffle = false)
 
       csvUtils.exportTable(queryTable, s"query_$concept${configs.queryRowsCount}")
       csvUtils.exportTable(retrievedTable, s"retrieved_$concept${configs.queryRowsCount}")
@@ -175,7 +175,7 @@ object Main extends App {
       val queryTable1 = csvUtils.importTableByName(name = s"query_$concept${configs.queryRowsCount}", configs.columnsCount, hdrRowIdx = Some(0))
       val retrievedTable1 = csvUtils.importTableByName(name = s"retrieved_$concept${configs.queryRowsCount}", configs.columnsCount, hdrRowIdx = Some(0))
 
-      val evalResults = doEval(queryTable1, retrievedTable1)
+      val evalResults = doEval(s"$concept${configs.queryRowsCount}", queryTable1, retrievedTable1)
       println(s"Evals: $evalResults")
 
     case TaskFlow.LargeExperiment =>
@@ -222,7 +222,7 @@ object Main extends App {
 
       // generate query random 10%
       val rowsCount = groundTruthTable.columns.head.length
-      val (queryTable, retrievedTable) = doMapping(groundTruthTable, (rowsCount * .1).toInt, shuffle = true)
+      val (queryTable, retrievedTable) = doMapping(truthName, groundTruthTable, (rowsCount * .1).toInt, shuffle = true)
 
 //      // eval
 //      val evalResult = doEval(queryTable, retrievedTable)
@@ -247,7 +247,7 @@ object Main extends App {
       val queryTable = csvUtils.importTableByName(name = queryName, configs.columnsCount, hdrIdx, keyIdx)
       val retrievedTable = csvUtils.importTableByName(name = retrievedName, configs.columnsCount, hdrIdx, keyIdx)
 
-      val evalResult = doEval(queryTable, retrievedTable)
+      val evalResult = doEval(truthName, queryTable, retrievedTable)
       (docId, evalResult)
     }
     serializer.saveAsJson(result, "100_eval.json")
@@ -268,7 +268,7 @@ object Main extends App {
 
   }
 
-  def doMapping(groundTruthTable: Table, queryRowsCount: Int, shuffle: Boolean): (Table, Table) = {
+  def doMapping(truthDataName: String, groundTruthTable: Table, queryRowsCount: Int, shuffle: Boolean): (Table, Table) = {
     val queryTableColumns = Table.getColumnsWithRandomRows(count=queryRowsCount, groundTruthTable, shuffle)
     val queryTable = new Table(docId = 0,"Query", "None", keyIdx = Some(0), hdrIdx = Some(0), columns = queryTableColumns)
 
@@ -277,17 +277,17 @@ object Main extends App {
     println("Start")
     val startTime = System.nanoTime
 
-    val algorithm = new TrexAlgorithm(reader, tableSearch, analyzer, s"$concept${configs.queryRowsCount}", tableColumnsRelations, configs.scoringMethod, configs.maxK)
+    val algorithm = new TrexAlgorithm(reader, tableSearch, analyzer, truthDataName, tableColumnsRelations, configs.scoringMethod, configs.maxK)
     val retrievedTable = algorithm.run(queryTable)
 
     val endTime = System.nanoTime
     val duration = TimeUnit.NANOSECONDS.toSeconds(endTime - startTime)
-    println(s"Finished indexing for $concept. Total found ${retrievedTable.columns.head.length} in $duration seconds")
+    println(s"Finished indexing for $truthDataName. Total found ${retrievedTable.columns.head.length} in $duration seconds")
 
     (queryTable, retrievedTable)
   }
 
-  def doEval(queryTable: Table, retrievedTable: Table): EvaluationResult = {
+  def doEval(truthDataName: String, queryTable: Table, retrievedTable: Table): EvaluationResult = {
 
     val entitiesTermFrequencyProvider = new LuceneIndexTermFrequencyProvider(reader, IndexFields.entities)
     val keySearcher = new KeySearcherWithSimilarity(entitiesTermFrequencyProvider, analyzer)
@@ -295,7 +295,7 @@ object Main extends App {
     val contentTermFrequencyProvider = new LuceneIndexTermFrequencyProvider(reader, IndexFields.content)
     val valueSearcher = new ValueSearcherWithSimilarity(contentTermFrequencyProvider, analyzer)
 
-    val evaluator = new Evaluator(groundTruthTable, keySearcher, valueSearcher, s"$concept${configs.queryRowsCount}")
+    val evaluator = new Evaluator(groundTruthTable, keySearcher, valueSearcher, truthDataName)
 
     val evalColumns = queryTable.columns.zipWithIndex.map { case (clmn, clmnIdx) =>
       clmn ::: retrievedTable.columns(clmnIdx)
