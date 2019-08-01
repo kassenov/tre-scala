@@ -46,7 +46,7 @@ class CsvUtils() {
     } finally if (csvAppender != null) csvAppender.close()
   }
 
-  def importTableByName(name: String, clmnsCount: Int, hdrRowIdx: Option[Int]): Table = {
+  def importTableByName(name: String, clmnsCount: Int, hdrRowIdx: Option[Int], keyClmnIdx: Option[Int] = Some(0)): Table = {
     val file = new File(s"outputs/$name.csv")
     val csvReader = new CsvReader()
 
@@ -65,7 +65,7 @@ class CsvUtils() {
       docId = -1,
       title = name,
       url = "no",
-      keyIdx = Some(0),
+      keyIdx = keyClmnIdx,
       hdrIdx = hdrRowIdx,
       columns = records.toList.transpose
     )

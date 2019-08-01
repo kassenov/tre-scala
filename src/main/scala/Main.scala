@@ -179,8 +179,7 @@ object Main extends App {
       println(s"Evals: $evalResults")
 
     case TaskFlow.LargeExperiment =>
-      val result = doMassiveExperiment()
-      serializer.saveAsJson(result, "100.json")
+      doMassiveExperimentMapping()
 
     case TaskFlow.ExtEvalPairWise =>
 
@@ -213,23 +212,46 @@ object Main extends App {
 
   }
 
-  def doMassiveExperiment() = {
-    List.range(1, 100).map { i =>
+  def doMassiveExperimentMapping() = {
+    val result = List.range(1, 100).map { i =>
       val randomTable = getRandomTable()
 
       // save table as ground truth csv
-      csvUtils.exportTable(randomTable, s"truth_${randomTable.docId}_1")
+      val truthName = s"truth_${randomTable.docId}_1"
+      csvUtils.exportTable(randomTable, truthName)
 
       // generate query random 10%
       val rowsCount = groundTruthTable.columns.head.length
       val (queryTable, retrievedTable) = doMapping(groundTruthTable, (rowsCount * .1).toInt, shuffle = true)
 
-      // eval
-      val evalResult = doEval(queryTable, retrievedTable)
+//      // eval
+//      val evalResult = doEval(queryTable, retrievedTable)
+
+      val queryName = s"query_$concept${configs.queryRowsCount}"
+      csvUtils.exportTable(queryTable, queryName)
+      val retrievedName = s"retrieved_$concept${configs.queryRowsCount}"
+      csvUtils.exportTable(retrievedTable, retrievedName)
 
       // save
-      (randomTable.docId, evalResult)
+      (randomTable.docId, (truthName, queryName, retrievedName), (randomTable.columns.length, randomTable.hdrIdx, randomTable.keyIdx))
     }
+    serializer.saveAsJson(result, "100_mapping.json")
+
+    result
+  }
+
+  def doMassiveExperimentEval() = {
+    val mappingResult = serializer.deserialize("100_mapping.json").asInstanceOf[List[(Int, (String, String, String), (Int, Option[Int], Option[Int]))]]
+
+    val result = mappingResult.map { case (docId, (truthName, queryName, retrievedName), (clmnsCount, hdrIdx, keyIdx)) =>
+      val queryTable = csvUtils.importTableByName(name = queryName, configs.columnsCount, hdrIdx, keyIdx)
+      val retrievedTable = csvUtils.importTableByName(name = retrievedName, configs.columnsCount, hdrIdx, keyIdx)
+
+      val evalResult = doEval(queryTable, retrievedTable)
+      (docId, evalResult)
+    }
+    serializer.saveAsJson(result, "100_eval.json")
+    result
   }
 
   def getRandomTable(randomDouble: Double = util.Random.nextDouble): Table = {
