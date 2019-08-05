@@ -125,13 +125,15 @@ class TrexAlgorithm(indexReader: IndexReader,
     val queryKeyToCandidateDocIdsHashMap = mutable.HashMap[String, mutable.ListBuffer[Int]]()
     candidateDocIdToMappingResult.foreach { case (candidateDocId, mappingResult) =>
       mappingResult.tableMatch.keyMatches.map { keyMatch =>
-        queryKeys(keyMatch.queryRowIdx) match {
-          case Some(key) =>
-            if (!queryKeyToCandidateDocIdsHashMap.contains(key)) {
-              queryKeyToCandidateDocIdsHashMap += key -> mutable.ListBuffer[Int]()
-            }
-            queryKeyToCandidateDocIdsHashMap(key) += candidateDocId
-          case None => // Nothing
+        if (queryKeys.size < keyMatch.queryRowIdx) {
+          queryKeys(keyMatch.queryRowIdx) match {
+            case Some(key) =>
+              if (!queryKeyToCandidateDocIdsHashMap.contains(key)) {
+                queryKeyToCandidateDocIdsHashMap += key -> mutable.ListBuffer[Int]()
+              }
+              queryKeyToCandidateDocIdsHashMap(key) += candidateDocId
+            case None => // Nothing
+          }
         }
       }
     }

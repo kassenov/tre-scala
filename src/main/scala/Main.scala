@@ -216,7 +216,7 @@ object Main extends App {
   }
 
   def get100Tables() = {
-    val tables = List.range(1, 100).map { i =>
+    val tables = List.range(1, 101).map { i =>
       getRandomTable()
     }
     serializer.serialize(tables, "100_tables")
@@ -224,24 +224,28 @@ object Main extends App {
 
   def doMassiveExperimentMapping() = {
     val tables = serializer.deserialize("100_tables").asInstanceOf[List[Table]]
+    val exclude = List(4582944, 2900578, 2023033, 2458809, 3225502, 507095)
 
-    val result = tables.map { randomTable =>
-      // save table as ground truth csv
-      val truthName = s"truth_${randomTable.docId}_1"
-      csvUtils.exportTable(randomTable, truthName)
+    val result = tables
+      .filterNot(t => exclude.contains(t.docId))
+      .map { randomTable =>
+        print(randomTable.docId)
+        // save table as ground truth csv
+        val truthName = s"truth_${randomTable.docId}_1"
+        csvUtils.exportTable(randomTable, truthName)
 
-      // generate query random 10%
-      val rowsCount = groundTruthTable.columns.head.length
-      val (queryTable, retrievedTable) = doMapping(truthName, groundTruthTable, (rowsCount * .1).toInt, shuffle = true)
+        // generate query random 10%
+        val rowsCount = randomTable.columns.head.length
+        val (queryTable, retrievedTable) = doMapping(truthName, randomTable, (rowsCount * .1).toInt, shuffle = true)
 
-      val queryName = s"query_$concept${configs.queryRowsCount}"
-      csvUtils.exportTable(queryTable, queryName)
-      val retrievedName = s"retrieved_$concept${configs.queryRowsCount}"
-      csvUtils.exportTable(retrievedTable, retrievedName)
+        val queryName = s"query_$concept${configs.queryRowsCount}"
+        csvUtils.exportTable(queryTable, queryName)
+        val retrievedName = s"retrieved_$concept${configs.queryRowsCount}"
+        csvUtils.exportTable(retrievedTable, retrievedName)
 
-      // save
-      (randomTable.docId, (truthName, queryName, retrievedName), (randomTable.columns.length, randomTable.hdrIdx, randomTable.keyIdx))
-    }
+        // save
+        (randomTable.docId, (truthName, queryName, retrievedName), (randomTable.columns.length, randomTable.hdrIdx, randomTable.keyIdx))
+      }
     serializer.serialize(result, "100_mapping")
 
     result

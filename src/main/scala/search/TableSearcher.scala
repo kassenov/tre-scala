@@ -119,7 +119,7 @@ class LuceneTableSearcher(indexSearcher: IndexSearcher) extends TableSearcher {
     val builder = new BooleanQuery.Builder()
 
     keys.foreach { key =>
-      val parsedKey = parser.parse(key.replace("/", " "))
+      val parsedKey = parser.parse(key.replace("/", " ").replace("*", " ").replace("?", " "))
       builder.add(parsedKey, BooleanClause.Occur.SHOULD)
     }
 
