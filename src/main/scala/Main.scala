@@ -217,19 +217,29 @@ object Main extends App {
 
   def get100Tables() = {
     val tables = List.range(1, 101).map { i =>
-      getRandomTable()
+      val t = getRandomTable()
+      t
     }
     serializer.serialize(tables, "100_tables")
   }
 
   def doMassiveExperimentMapping() = {
-    val tables = serializer.deserialize("100_tables").asInstanceOf[List[Table]]
-    val exclude = List(4582944, 2900578, 2023033, 2458809, 3225502, 507095)
+//    val tables = serializer.deserialize("100_tables").asInstanceOf[List[Table]]
+    val docIds = List(440451, 3355434, 1331009, 4877156, 628908, 1334811, 3589136, 3495260, 2403332, 1406660, 5105147, 2892918, 4889586, 622984, 3414566, 4165492, 1128284, 3242218, 860445, 1779966, 2333157, 63285, 2458613, 3354966, 2827760, 977986, 3177489, 1229419, 2899767, 449239, 3967912, 4506903, 1686640, 4785193, 4410725, 930053, 3366240, 965781, 2991735, 1766814, 4761892, 2962175, 2357351, 137833, 5166781, 4893246, 3730852, 2530134, 1390110, 4921841)
 
-    val result = tables
-      .filterNot(t => exclude.contains(t.docId))
-      .map { randomTable =>
-        print(randomTable.docId)
+    val result = docIds
+      .map { docId =>
+        val jsonTable = reader.document(docId).get("raw")
+        val originalRandomTable = transformer.rawJsonToTable(docId, jsonTable)
+
+        val columns = if (originalRandomTable.keyIdx.get != 0) {
+          originalRandomTable.columns.updated(0, originalRandomTable.columns(originalRandomTable.keyIdx.get)).updated(originalRandomTable.keyIdx.get, originalRandomTable.columns(0))
+        } else {
+          originalRandomTable.columns
+        }
+
+        val randomTable = originalRandomTable.copy(columns = columns)
+
         // save table as ground truth csv
         val truthName = s"truth_${randomTable.docId}_1"
         csvUtils.exportTable(randomTable, truthName)
@@ -271,7 +281,7 @@ object Main extends App {
     val jsonTable = reader.document(randomDocId).get("raw")
 
     transformer.rawJsonToTable(randomDocId, jsonTable) match {
-      case table if table.columns.length > 1 && table.columns.head.length > 7 =>
+      case table if table.columns.length > 1 && table.columns.head.length > 10 && table.keyIdx.isDefined =>
         table
       case _ =>
         getRandomTable()
