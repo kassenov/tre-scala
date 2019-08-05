@@ -246,7 +246,12 @@ object Main extends App {
 
         // generate query random 10%
         val rowsCount = randomTable.columns.head.length
-        val (queryTable, retrievedTable) = doMapping(truthName, randomTable, (rowsCount * .1).toInt, shuffle = true)
+        val querySize = if (rowsCount < 30) {
+          3
+        } else {
+          (rowsCount * .1).toInt
+        }
+        val (queryTable, retrievedTable) = doMapping(truthName, randomTable, querySize, shuffle = true)
 
         val queryName = s"query_$concept${configs.queryRowsCount}"
         csvUtils.exportTable(queryTable, queryName)

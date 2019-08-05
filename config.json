@@ -1,12 +1,12 @@
 {
   "query_rows_count": 5,
-  "concept": "foobal100",
+  "concept": "entr_low_countries_region",
   "clmns_count": 4,
-  "task": "KeyValueEntropyEval",
+  "task": "LargeExperiment",
   "scoring": "Simple",
   "maxK": 100000,
   "clmns_relations": [[0,1],[0,2],[0,3]],
-  "doc_ids": [11407084, 34743165, 26448278, 37525376],
+  "doc_ids": [4788857, 1556075, 1677985, 1316811, 3354778, 3656008, 3866610, 1298378, 3958779, 4797828, 2640997, 1326681, 1619245, 4147702, 3617824, 3444243, 2718537, 1909269],
   "ext_params": ["/media/light/SSD/50/MannheimSearchJoinsEngine/results/countries_region.csv"],
   "pConcepts": ["countries"],
   "pTasks": ["Mapping", "Evaluating", "KeysAnalysis", "Extracting", "ExtEvalPairWise", "QueryTableEval", "KeyValueEntropyEval"],
@@ -16,6 +16,12 @@
     "clmns_count": 2
   }, {
     "title": "n_low_olympics2008_gold",
+    "clmns_count": 4
+  }, {
+    "title": "n_high_countries_capital",
+    "clmns_count": 4
+  }, {
+    "title": "entr_high_countries_capital",
     "clmns_count": 4
   }]
 }
