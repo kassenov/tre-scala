@@ -242,7 +242,7 @@ object Main extends App {
         } else {
           (rowsCount * .1).toInt
         }
-        val (queryTable, retrievedTable) = doMapping(truthName, randomTable, querySize, shuffle = true)
+        val (queryTable, retrievedTable) = doMapping(truthName, randomTable, querySize, shuffle = false)
 
         val queryName = s"query_${docId}_$querySize"
         csvUtils.exportTable(queryTable, queryName)
@@ -258,17 +258,24 @@ object Main extends App {
   }
 
   def doMassiveExperimentEval() = {
+    val excludeDocIds = List(440451)
     val mappingResult = serializer.deserialize("100_mapping").asInstanceOf[List[(Int, (String, String, String), (Int, Option[Int], Option[Int]))]]
 
-    val result = mappingResult.map { case (docId, (truthName, queryName, retrievedName), (clmnsCount, hdrIdx, keyIdx)) =>
-      val groundTruthTable = getTable(docId)
+    val result = mappingResult
+      .filterNot { case (docId, _, _) => excludeDocIds.contains(docId) }
+      .map { case (docId, (truthName, queryName, retrievedName), (clmnsCount, hdrIdx, keyIdx)) =>
+        val groundTruthTable = getTable(docId)
 
-      val queryTable = csvUtils.importTableByName(name = queryName, configs.columnsCount, hdrIdx, keyIdx)
-      val retrievedTable = csvUtils.importTableByName(name = retrievedName, configs.columnsCount, hdrIdx, keyIdx)
+        val queryTable = csvUtils.importTableByName(name = queryName, configs.columnsCount, hdrIdx, keyIdx)
+        val retrievedTable = csvUtils.importTableByName(name = retrievedName, configs.columnsCount, hdrIdx, keyIdx)
 
-      val evalResult = doEval(truthName, queryTable, retrievedTable, groundTruthTable)
-      (docId, evalResult)
-    }
+        val evalResult = doEval(truthName, queryTable, retrievedTable, groundTruthTable)
+
+        print(evalResult)
+        print("\n")
+
+        (docId, evalResult)
+      }
     serializer.saveAsJson(result, "100_eval.json")
     result
   }
