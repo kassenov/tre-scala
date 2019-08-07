@@ -176,13 +176,13 @@ object Main extends App {
       val queryTable1 = csvUtils.importTableByName(name = s"query_$concept${configs.queryRowsCount}", configs.columnsCount, hdrRowIdx = Some(0))
       val retrievedTable1 = csvUtils.importTableByName(name = s"retrieved_$concept${configs.queryRowsCount}", configs.columnsCount, hdrRowIdx = Some(0))
 
-      val evalResults = doEval(s"$concept${configs.queryRowsCount}", queryTable1, retrievedTable1)
+      val evalResults = doEval(s"$concept${configs.queryRowsCount}", queryTable1, retrievedTable1, groundTruthTable)
       println(s"Evals: $evalResults")
 
     case TaskFlow.LargeExperiment =>
 //      get100Tables()
-      doMassiveExperimentMapping()
-//      doMassiveExperimentEval()
+//      doMassiveExperimentMapping()
+      doMassiveExperimentEval()
 
     case TaskFlow.ExtEvalPairWise =>
 
@@ -229,16 +229,7 @@ object Main extends App {
 
     val result = docIds
       .map { docId =>
-        val jsonTable = reader.document(docId).get("raw")
-        val originalRandomTable = transformer.rawJsonToTable(docId, jsonTable)
-
-        val columns = if (originalRandomTable.keyIdx.get != 0) {
-          originalRandomTable.columns.updated(0, originalRandomTable.columns(originalRandomTable.keyIdx.get)).updated(originalRandomTable.keyIdx.get, originalRandomTable.columns(0))
-        } else {
-          originalRandomTable.columns
-        }
-
-        val randomTable = originalRandomTable.copy(columns = columns)
+        val randomTable = getTable(docId)
 
         // save table as ground truth csv
         val truthName = s"truth_${randomTable.docId}_1"
@@ -253,9 +244,9 @@ object Main extends App {
         }
         val (queryTable, retrievedTable) = doMapping(truthName, randomTable, querySize, shuffle = true)
 
-        val queryName = s"query_$concept${configs.queryRowsCount}"
+        val queryName = s"query_${docId}_$querySize"
         csvUtils.exportTable(queryTable, queryName)
-        val retrievedName = s"retrieved_$concept${configs.queryRowsCount}"
+        val retrievedName = s"retrieved_${docId}_$querySize"
         csvUtils.exportTable(retrievedTable, retrievedName)
 
         // save
@@ -270,10 +261,12 @@ object Main extends App {
     val mappingResult = serializer.deserialize("100_mapping").asInstanceOf[List[(Int, (String, String, String), (Int, Option[Int], Option[Int]))]]
 
     val result = mappingResult.map { case (docId, (truthName, queryName, retrievedName), (clmnsCount, hdrIdx, keyIdx)) =>
+      val groundTruthTable = getTable(docId)
+
       val queryTable = csvUtils.importTableByName(name = queryName, configs.columnsCount, hdrIdx, keyIdx)
       val retrievedTable = csvUtils.importTableByName(name = retrievedName, configs.columnsCount, hdrIdx, keyIdx)
 
-      val evalResult = doEval(truthName, queryTable, retrievedTable)
+      val evalResult = doEval(truthName, queryTable, retrievedTable, groundTruthTable)
       (docId, evalResult)
     }
     serializer.saveAsJson(result, "100_eval.json")
@@ -313,7 +306,7 @@ object Main extends App {
     (queryTable, retrievedTable)
   }
 
-  def doEval(truthDataName: String, queryTable: Table, retrievedTable: Table): EvaluationResult = {
+  def doEval(truthDataName: String, queryTable: Table, retrievedTable: Table, groundTruthTable: Table): EvaluationResult = {
 
     val entitiesTermFrequencyProvider = new LuceneIndexTermFrequencyProvider(reader, IndexFields.entities)
     val keySearcher = new KeySearcherWithSimilarity(entitiesTermFrequencyProvider, analyzer)
@@ -337,6 +330,19 @@ object Main extends App {
 
     evaluator.evaluate(evalTable)
 
+  }
+
+  def getTable(docId: Int) = {
+    val jsonTable = reader.document(docId).get("raw")
+    val originalRandomTable = transformer.rawJsonToTable(docId, jsonTable)
+
+    val columns = if (originalRandomTable.keyIdx.get != 0) {
+      originalRandomTable.columns.updated(0, originalRandomTable.columns(originalRandomTable.keyIdx.get)).updated(originalRandomTable.keyIdx.get, originalRandomTable.columns(0))
+    } else {
+      originalRandomTable.columns
+    }
+
+    originalRandomTable.copy(columns = columns, keyIdx = Some(0))
   }
 
   val a = 10
