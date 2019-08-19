@@ -84,7 +84,11 @@ class LuceneTableSearcher(indexSearcher: IndexSearcher) extends TableSearcher {
   def getRawJsonTablesByDocIds(docIds: List[Int]): ParMap[Int, String] = {
     docIds
       .par
-      .map(doc => (doc, indexSearcher.doc(doc).get("raw")))
+      .map(docId => {
+        val doc = indexSearcher.doc(docId)
+        print(doc.get("key"))
+        (docId, doc.get("raw"))
+      })
       .toMap
   }
 
