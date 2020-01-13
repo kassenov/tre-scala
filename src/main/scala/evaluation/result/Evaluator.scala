@@ -36,7 +36,10 @@ class Evaluator(groundTruthTable: Table,
   def evaluate(evalTable: Table): EvaluationResult = {
 
     val retrievedTotalRowsCount = evalTable.columns.head.length
-    val truthTotalRowsCount = groundTruthTable.columns.head.length
+    val truthTotalRowsCount = groundTruthTable.hdrIdx match {
+      case Some(_) => groundTruthTable.columns.head.length - 1
+      case None => groundTruthTable.columns.head.length
+    }
 
     val truthKeyColumn = Table.getKeys(groundTruthTable)
     val evalKeyColumn = Table.getKeys(evalTable)
@@ -57,8 +60,8 @@ class Evaluator(groundTruthTable: Table,
 
       val valueMatchesCountResult = calculateValuesMatchInColumns(keyTruthRowIdxToEvalRowIdx, truthColumn, evalColumn)
 
-      val precision = calculatePrecision(valueMatchesCountResult.matchValuesCount, matchKeysCount)//retrievedTotalRowsCount)
-      val recall = calculateRecall(valueMatchesCountResult.matchValuesCount, matchKeysCount) //truthTotalRowsCount)
+      val precision = calculatePrecision(valueMatchesCountResult.matchValuesCount, retrievedTotalRowsCount) //matchKeysCount)
+      val recall = calculateRecall(valueMatchesCountResult.matchValuesCount, truthTotalRowsCount) //matchKeysCount)
 
       EvaluationValuesWithNM(clmnIdx, EvaluationScore(precision, recall), valueMatchesCountResult)
 
