@@ -36,7 +36,7 @@ class MappingPipe(keySearcher: KeySearcher,
 
   // Filters
   val candidateKeysFilter = new FilterTableByCandidateKeys()
-  val sizeFilter = new FilterTableBySize(minRows = 5, minCols = 3)
+  val sizeFilter = new FilterTableBySize(minRows = 5, minCols = 2)
 
   def deserializeOrFindAndMapByQueryKeysAndDataName(): Map[Int,MappingPipeResult] = {
 
